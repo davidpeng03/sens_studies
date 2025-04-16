@@ -1,0 +1,4 @@
+couplings:
+  epsilon: 0.00000008
+masses:
+  A: 10.0

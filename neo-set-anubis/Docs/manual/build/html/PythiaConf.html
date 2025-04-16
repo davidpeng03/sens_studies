@@ -1,0 +1,309 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pythia Simulation Interface &mdash; Neo-Set-Anubis 1.0.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b76e3c8a" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=c682d59b" />
+      <link rel="stylesheet" type="text/css" href="_static/bullets.css" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=8d563738"></script>
+      <script src="_static/doctools.js?v=9a2dae69"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Pythia Event Generator" href="PythiaEventGenerator.html" />
+    <link rel="prev" title="Branching Ratio Calculation" href="BranchingRatioCalculation.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            Neo-Set-Anubis
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="ReleaseUpdate.html">What’s New</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Installation.html">Installation and Deployment</a></li>
+<li class="toctree-l1"><a class="reference internal" href="BranchingRatioCalculation.html">Branching Ratio Calculation</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Pythia Simulation Interface</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#classes-overview">Classes Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#particleconfigfactory">ParticleConfigFactory</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#pythiasimulation">PythiaSimulation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#command-line-arguments">Command-Line Arguments</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#particle-configuration-registration">Particle Configuration Registration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#automatic-documentation-with-sphinx">Automatic Documentation with Sphinx</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#Pythia_conf.ParticleConfigFactory"><code class="docutils literal notranslate"><span class="pre">ParticleConfigFactory</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#Pythia_conf.ParticleConfigFactory.get_particle_config"><code class="docutils literal notranslate"><span class="pre">ParticleConfigFactory.get_particle_config()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Pythia_conf.ParticleConfigFactory.particle_config_map"><code class="docutils literal notranslate"><span class="pre">ParticleConfigFactory.particle_config_map</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Pythia_conf.ParticleConfigFactory.register_particle_config"><code class="docutils literal notranslate"><span class="pre">ParticleConfigFactory.register_particle_config()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#Pythia_conf.PythiaSimulation"><code class="docutils literal notranslate"><span class="pre">PythiaSimulation</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#Pythia_conf.PythiaSimulation.read_base_config"><code class="docutils literal notranslate"><span class="pre">PythiaSimulation.read_base_config()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Pythia_conf.PythiaSimulation.setup_simulation"><code class="docutils literal notranslate"><span class="pre">PythiaSimulation.setup_simulation()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Pythia_conf.PythiaSimulation.write_config"><code class="docutils literal notranslate"><span class="pre">PythiaSimulation.write_config()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#Pythia_conf.register_config"><code class="docutils literal notranslate"><span class="pre">register_config()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="PythiaEventGenerator.html">Pythia Event Generator</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Neo-Set-Anubis</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Pythia Simulation Interface</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/PythiaConf.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="pythia-simulation-interface">
+<span id="pythiainterface"></span><h1>Pythia Simulation Interface<a class="headerlink" href="#pythia-simulation-interface" title="Link to this heading"></a></h1>
+<p>The Pythia Simulation Interface provides a structured way to configure and simulate particles, particularly heavy neutral leptons (HNL) and Dark Photons. This interface allows users to set up simulations via custom configurations and utilize pre-defined or new particle configuration classes.</p>
+<p>The main functionalities of this interface include:</p>
+<ul class="simple">
+<li><p><strong>Configurable particle types</strong>: Users can register and manage various particle configurations.</p></li>
+<li><p><strong>Simulation execution</strong>: Based on these configurations, the interface sets up and executes Pythia simulations.</p></li>
+<li><p><strong>Argument parsing</strong>: The interface supports flexible configuration input via command-line arguments using <cite>argparse</cite>.</p></li>
+</ul>
+<section id="classes-overview">
+<h2>Classes Overview<a class="headerlink" href="#classes-overview" title="Link to this heading"></a></h2>
+</section>
+<section id="particleconfigfactory">
+<h2>ParticleConfigFactory<a class="headerlink" href="#particleconfigfactory" title="Link to this heading"></a></h2>
+<p>This factory class manages and retrieves configurations for different particle types.</p>
+<p>### Example Usage:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">Pythia_conf</span> <span class="kn">import</span> <span class="n">ParticleConfigFactory</span>
+
+<span class="c1"># Retrieve HNL configuration</span>
+<span class="n">hnl_config</span> <span class="o">=</span> <span class="n">ParticleConfigFactory</span><span class="o">.</span><span class="n">get_particle_config</span><span class="p">(</span><span class="s2">&quot;HNL&quot;</span><span class="p">,</span> <span class="n">params</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="pythiasimulation">
+<h2>PythiaSimulation<a class="headerlink" href="#pythiasimulation" title="Link to this heading"></a></h2>
+<p>The <cite>PythiaSimulation</cite> class sets up and runs a Pythia simulation based on particle-specific configurations.</p>
+<p>### Example Usage:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">simulation</span> <span class="o">=</span> <span class="n">PythiaSimulation</span><span class="p">(</span><span class="n">hnl_config</span><span class="p">)</span>
+<span class="n">simulation</span><span class="o">.</span><span class="n">setup_simulation</span><span class="p">()</span>
+</pre></div>
+</div>
+</section>
+<section id="command-line-arguments">
+<h2>Command-Line Arguments<a class="headerlink" href="#command-line-arguments" title="Link to this heading"></a></h2>
+<p>This interface provides several command-line arguments for flexible configuration. These options allow users to specify the particle type, mass, couplings, and other settings related to the simulation.</p>
+<p>Here is a breakdown of the available arguments:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>usage:<span class="w"> </span>Pythia<span class="w"> </span>Simulation<span class="w"> </span><span class="k">for</span><span class="w"> </span>HNL<span class="w"> </span>Particles
+<span class="w">       </span><span class="o">[</span>-h<span class="o">]</span><span class="w"> </span><span class="o">[</span>--model<span class="w"> </span>MODEL<span class="o">]</span><span class="w"> </span><span class="o">[</span>--particle<span class="w"> </span>PARTICLE<span class="o">]</span><span class="w"> </span><span class="o">[</span>--mass<span class="w"> </span>MASS<span class="o">]</span>
+<span class="w">       </span><span class="o">[</span>--coupling<span class="w"> </span>COUPLING<span class="w"> </span><span class="o">[</span>COUPLING<span class="w"> </span>...<span class="o">]]</span><span class="w"> </span><span class="o">[</span>--process<span class="w"> </span>PROCESS<span class="o">]</span>
+<span class="w">       </span><span class="o">[</span>--may_decay<span class="w"> </span>MAY_DECAY<span class="o">]</span><span class="w"> </span><span class="o">[</span>--epsilon<span class="w"> </span>EPSILON<span class="o">]</span>
+<span class="w">       </span><span class="o">[</span>--MesonMother<span class="w"> </span>MESONMOTHER<span class="o">]</span>
+
+optional<span class="w"> </span>arguments:
+<span class="w">  </span>-h,<span class="w"> </span>--help<span class="w">            </span>Show<span class="w"> </span>this<span class="w"> </span><span class="nb">help</span><span class="w"> </span>message<span class="w"> </span>and<span class="w"> </span><span class="nb">exit</span>
+<span class="w">  </span>--model<span class="w"> </span>MODEL<span class="w">         </span>Particle<span class="w"> </span>model<span class="w"> </span><span class="o">(</span>default:<span class="w"> </span><span class="s2">&quot;HNL&quot;</span><span class="o">)</span>
+<span class="w">  </span>--particle<span class="w"> </span>PARTICLE<span class="w">   </span>Particle<span class="w"> </span>name<span class="w"> </span><span class="o">(</span>default:<span class="w"> </span><span class="s2">&quot;N1&quot;</span><span class="o">)</span>
+<span class="w">  </span>--mass<span class="w"> </span>MASS<span class="w">           </span>Mass<span class="w"> </span>of<span class="w"> </span>the<span class="w"> </span>HNL<span class="w"> </span>particle<span class="w"> </span><span class="o">(</span>default:<span class="w"> </span><span class="m">1</span>.0<span class="o">)</span>
+<span class="w">  </span>--coupling<span class="w"> </span>COUPLING<span class="w"> </span><span class="o">[</span>COUPLING<span class="w"> </span>...<span class="o">]</span>
+<span class="w">                        </span>Three<span class="w"> </span>couplings<span class="w"> </span><span class="k">for</span><span class="w"> </span>the<span class="w"> </span>HNL<span class="w"> </span>particle<span class="w"> </span><span class="o">(</span>default:
+<span class="w">                        </span><span class="o">[</span><span class="m">0</span>.447e-9,<span class="w"> </span><span class="m">7</span>.15e-9,<span class="w"> </span><span class="m">1</span>.88e-9<span class="o">])</span>
+<span class="w">  </span>--process<span class="w"> </span>PROCESS<span class="w">     </span>Process<span class="w"> </span>selection<span class="w"> </span><span class="k">for</span><span class="w"> </span>the<span class="w"> </span>simulation<span class="w"> </span><span class="o">(</span>default:<span class="w"> </span><span class="s2">&quot;c&quot;</span><span class="o">)</span>
+<span class="w">  </span>--may_decay<span class="w"> </span>MAY_DECAY
+<span class="w">                        </span>True<span class="w"> </span>or<span class="w"> </span>False,<span class="w"> </span>whether<span class="w"> </span>we<span class="w"> </span>consider<span class="w"> </span>particle<span class="w"> </span>decays
+<span class="w">                        </span><span class="o">(</span>default:<span class="w"> </span>False<span class="o">)</span>
+<span class="w">  </span>--epsilon<span class="w"> </span>EPSILON<span class="w">     </span>Epsilon<span class="w"> </span>mixing<span class="w"> </span>value<span class="w"> </span><span class="k">for</span><span class="w"> </span>DarkPhoton<span class="w"> </span><span class="o">(</span>default:<span class="w"> </span>8e-08<span class="o">)</span>
+<span class="w">  </span>--MesonMother<span class="w"> </span>MESONMOTHER
+<span class="w">                        </span>Choose<span class="w"> </span>DarkPhoton<span class="w"> </span>production<span class="w"> </span>meson<span class="w"> </span><span class="nb">source</span><span class="w"> </span><span class="o">(</span>default:<span class="w"> </span>True<span class="o">)</span>
+</pre></div>
+</div>
+<p>### Example Usage:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>pythia_simulation.py<span class="w"> </span>--model<span class="w"> </span>HNL<span class="w"> </span>--particle<span class="w"> </span>N1<span class="w"> </span>--mass<span class="w"> </span><span class="m">1</span>.0<span class="w"> </span>--coupling<span class="w"> </span><span class="m">0</span>.447e-9<span class="w"> </span><span class="m">7</span>.15e-9<span class="w"> </span><span class="m">1</span>.88e-9<span class="w"> </span>--process<span class="w"> </span>c<span class="w"> </span>--may_decay<span class="w"> </span>False
+</pre></div>
+</div>
+</section>
+<section id="particle-configuration-registration">
+<h2>Particle Configuration Registration<a class="headerlink" href="#particle-configuration-registration" title="Link to this heading"></a></h2>
+<p>Particle configurations can be registered dynamically using the <cite>register_config</cite> decorator. This allows users to easily extend the supported particles by creating new configuration classes.</p>
+<p>### Example:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">Pythia_conf</span> <span class="kn">import</span> <span class="n">register_config</span>
+
+<span class="nd">@register_config</span><span class="p">(</span><span class="s2">&quot;NewParticle&quot;</span><span class="p">)</span>
+<span class="k">class</span> <span class="nc">NewParticleConfig</span><span class="p">:</span>
+    <span class="c1"># Custom configuration logic here</span>
+    <span class="k">pass</span>
+</pre></div>
+</div>
+</section>
+<section id="automatic-documentation-with-sphinx">
+<h2>Automatic Documentation with Sphinx<a class="headerlink" href="#automatic-documentation-with-sphinx" title="Link to this heading"></a></h2>
+<p>Automatic documentation :</p>
+<dl class="py class" id="module-Pythia_conf">
+<dt class="sig sig-object py" id="Pythia_conf.ParticleConfigFactory">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">Pythia_conf.</span></span><span class="sig-name descname"><span class="pre">ParticleConfigFactory</span></span><a class="reference internal" href="_modules/Pythia_conf.html#ParticleConfigFactory"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#Pythia_conf.ParticleConfigFactory" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>A factory class for managing and retrieving configurations for different particle types.
+Allows registration of new particle configurations and retrieval based on particle type.</p>
+<dl class="simple">
+<dt>Attributes:</dt><dd><p>particle_config_map (dict): A mapping from particle type names to their corresponding configuration classes.</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="Pythia_conf.ParticleConfigFactory.get_particle_config">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_particle_config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">particle_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Pythia_conf.html#ParticleConfigFactory.get_particle_config"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#Pythia_conf.ParticleConfigFactory.get_particle_config" title="Link to this definition"></a></dt>
+<dd><p>Retrieve the configuration class instance for a given particle type using provided parameters.</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>particle_type (str): The name of the particle type.
+params (dict): The parameters required to configure the particle.</p>
+</dd>
+<dt>Returns:</dt><dd><p>An instance of the configuration class associated with the particle type.</p>
+</dd>
+<dt>Raises:</dt><dd><p>ValueError: If the particle type is not supported.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Pythia_conf.ParticleConfigFactory.particle_config_map">
+<span class="sig-name descname"><span class="pre">particle_config_map</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{'DarkPhoton':</span> <span class="pre">None,</span> <span class="pre">'HNL':</span> <span class="pre">&lt;class</span> <span class="pre">'Pipeline.HNL.Pythia_HNL.HNLConfig'&gt;}</span></em><a class="headerlink" href="#Pythia_conf.ParticleConfigFactory.particle_config_map" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Pythia_conf.ParticleConfigFactory.register_particle_config">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">register_particle_config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">particle_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">config_class</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Pythia_conf.html#ParticleConfigFactory.register_particle_config"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#Pythia_conf.ParticleConfigFactory.register_particle_config" title="Link to this definition"></a></dt>
+<dd><p>Register a configuration class for a specific particle type.</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>particle_type (str): The name of the particle type.
+config_class (class): The class handling configuration for the particle type.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="Pythia_conf.PythiaSimulation">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">Pythia_conf.</span></span><span class="sig-name descname"><span class="pre">PythiaSimulation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">particle_config</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Pythia_conf.html#PythiaSimulation"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#Pythia_conf.PythiaSimulation" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Main class for setting up and executing Pythia simulations based on particle configurations.</p>
+<dl class="simple">
+<dt>Attributes:</dt><dd><p>particle_config: Configuration instance for the particle to be simulated.</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="Pythia_conf.PythiaSimulation.read_base_config">
+<span class="sig-name descname"><span class="pre">read_base_config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filepath</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Pythia_conf.html#PythiaSimulation.read_base_config"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#Pythia_conf.PythiaSimulation.read_base_config" title="Link to this definition"></a></dt>
+<dd><p>Read the base configuration file for the simulation.</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>filepath (str): The path to the configuration file.</p>
+</dd>
+<dt>Returns:</dt><dd><p>A list of configuration lines from the file.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Pythia_conf.PythiaSimulation.setup_simulation">
+<span class="sig-name descname"><span class="pre">setup_simulation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cmnd_file</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'pythia_config.cmnd'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Pythia_conf.html#PythiaSimulation.setup_simulation"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#Pythia_conf.PythiaSimulation.setup_simulation" title="Link to this definition"></a></dt>
+<dd><p>Set up the simulation by merging base and particle-specific configurations and writing to a file.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Pythia_conf.PythiaSimulation.write_config">
+<span class="sig-name descname"><span class="pre">write_config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config_lines</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cmnd_file</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Pythia_conf.html#PythiaSimulation.write_config"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#Pythia_conf.PythiaSimulation.write_config" title="Link to this definition"></a></dt>
+<dd><p>Write the final configuration lines to the simulation configuration file.</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>config_lines (list): List of configuration lines to write.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="Pythia_conf.register_config">
+<span class="sig-prename descclassname"><span class="pre">Pythia_conf.</span></span><span class="sig-name descname"><span class="pre">register_config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">particle_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Pythia_conf.html#register_config"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#Pythia_conf.register_config" title="Link to this definition"></a></dt>
+<dd><p>Decorator for registering a configuration class to a specific particle type.</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>particle_type (str): The name of the particle type to register.</p>
+</dd>
+<dt>Returns:</dt><dd><p>A decorator that registers the configuration class and returns it.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="BranchingRatioCalculation.html" class="btn btn-neutral float-left" title="Branching Ratio Calculation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="PythiaEventGenerator.html" class="btn btn-neutral float-right" title="Pythia Event Generator" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Paul Nathaniel Swallow, Théo Reymermier, Anna Jane Mullin, Sofie Nordahl Erner.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

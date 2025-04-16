@@ -1,0 +1,15 @@
+Instructions for running Madgraph locally as a basic run with no HTCondor, assuming the user already has a working installation of Madgraph (e.g. 3.5.4 or 3.5.5, the current latest version) + Pythia8 with library paths set in input/mg5_configuration.txt within the MG directory, and an HNL UFO from FeynRules in the /models directory, and relevant run card, parameter card and madspin card accessible.
+
+1. Write a jobscript file. This can be identical to the jobscript file used in running on HTCondor (see neo-set-anubis/Generation/README.md instructions and the example jobscript in same directory). 
+
+2. To ensure you perform a parameter scan, set a range of values for some parameters in the jobscript, e.g. by adding the lines: 
+
+    set VeN1 scan:[1e-6, 1e-4, 1e-2, 1.]
+
+    set MN1 scan:[0.7, 0.8, 0.9, 1.0, 1.1, 1.2]
+
+Or, for a quicker scan to test, choose only 1 or 2 points per parameter (coupling VeN1 and mass MN1 of the HNL N1). 
+
+3. Given a jobscript with run instructions such as the example referenced, enter the MG directory (e.g. MG5_aMC_v3_5_4/), and run in terminal with command: ./bin/mg5_aMC jobscript_hnl_param_scan.txt 
+
+4. Once the run is complete, enter the newly created output directory (named in the jobscript file at the output line e.g. 'output HNL_Test'). Enter .../MG5_aMC_v3_5_4/HNL_Test/Events/ and find within there the scan*.txt file defining the values corresponding to all the parameter points and variables calculated by Madgraph during the run. Check cross-sections. See also the example scan file 'scan_run_[01-12].txt' in this repository. 

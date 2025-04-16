@@ -1,0 +1,245 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pythia Event Generator &mdash; Neo-Set-Anubis 1.0.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b76e3c8a" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=c682d59b" />
+      <link rel="stylesheet" type="text/css" href="_static/bullets.css" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=8d563738"></script>
+      <script src="_static/doctools.js?v=9a2dae69"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="Pythia Simulation Interface" href="PythiaConf.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            Neo-Set-Anubis
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="ReleaseUpdate.html">What’s New</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Installation.html">Installation and Deployment</a></li>
+<li class="toctree-l1"><a class="reference internal" href="BranchingRatioCalculation.html">Branching Ratio Calculation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="PythiaConf.html">Pythia Simulation Interface</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Pythia Event Generator</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#overview">Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#functions">Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#create-pythia-generator">create_pythia_generator</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#process-file">process_file</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ensure-directories">ensure_directories</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#command-line-arguments">Command-Line Arguments</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#directory-management">Directory Management</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#conclusion">Conclusion</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Neo-Set-Anubis</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Pythia Event Generator</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/PythiaEventGenerator.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="pythia-event-generator">
+<span id="pythiaeventgenerator"></span><h1>Pythia Event Generator<a class="headerlink" href="#pythia-event-generator" title="Link to this heading"></a></h1>
+<p>This script facilitates the generation of particle physics events using the Pythia simulation framework. It provides flexibility for handling multiple configuration files and outputting results in <cite>.lhe</cite> and <cite>.hepmc</cite> formats. The script also supports custom file naming conventions, including timestamping, and allows specification of input/output directories.</p>
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Link to this heading"></a></h2>
+<p>The script performs the following key tasks:</p>
+<ul class="simple">
+<li><p><strong>Event Generation</strong>: Uses Pythia to generate events based on configuration files.</p></li>
+<li><p><strong>Customizable Output</strong>: Allows users to define output filenames with optional timestamp inclusion.</p></li>
+<li><p><strong>Directory Management</strong>: Ensures necessary directories for <cite>.lhe</cite> and <cite>.hepmc</cite> files exist before generating events.</p></li>
+<li><p><strong>Flexible Input</strong>: Accepts a single <cite>.cmnd</cite> configuration file, a list of files, or an entire directory of <cite>.cmnd</cite> files.</p></li>
+</ul>
+</section>
+<section id="functions">
+<h2>Functions<a class="headerlink" href="#functions" title="Link to this heading"></a></h2>
+</section>
+<section id="create-pythia-generator">
+<h2>create_pythia_generator<a class="headerlink" href="#create-pythia-generator" title="Link to this heading"></a></h2>
+<p>This function initializes and returns a Pythia generator with the specified parameters.</p>
+<ul>
+<li><p><strong>Arguments</strong>:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><cite>config_file</cite>: Path to the Pythia configuration <cite>.cmnd</cite> file.</p></li>
+<li><p><cite>lhe_output</cite>: Path for the output <cite>.lhe</cite> file.</p></li>
+<li><p><cite>hepmc_output</cite>: Path for the output <cite>.hepmc</cite> file.</p></li>
+<li><p><cite>num_events</cite>: Number of events to generate.</p></li>
+</ul>
+</div></blockquote>
+</li>
+<li><p><strong>Returns</strong>: A configured Pythia generator instance.</p></li>
+</ul>
+</section>
+<section id="process-file">
+<h2>process_file<a class="headerlink" href="#process-file" title="Link to this heading"></a></h2>
+<p>Generates events for a given Pythia configuration file and writes the output to <cite>.lhe</cite> and <cite>.hepmc</cite> files.</p>
+<ul>
+<li><p><strong>Arguments</strong>:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><cite>config_file</cite>: Path to the Pythia configuration <cite>.cmnd</cite> file.</p></li>
+<li><p><cite>output_lhe_dir</cite>: Directory for the output <cite>.lhe</cite> file.</p></li>
+<li><p><cite>output_hepmc_dir</cite>: Directory for the output <cite>.hepmc</cite> file.</p></li>
+<li><p><cite>num_events</cite>: Number of events to generate.</p></li>
+<li><p><cite>suffix</cite>: Suffix to append to the output filenames.</p></li>
+<li><p><cite>include_time</cite>: Boolean flag to determine whether to include a timestamp in the filenames.</p></li>
+</ul>
+</div></blockquote>
+</li>
+</ul>
+</section>
+<section id="ensure-directories">
+<h2>ensure_directories<a class="headerlink" href="#ensure-directories" title="Link to this heading"></a></h2>
+<p>Ensures that the specified directories exist, creating them if necessary.</p>
+<ul>
+<li><p><strong>Arguments</strong>:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><cite>base_dir</cite>: Base directory where the subdirectories should be created.</p></li>
+<li><p><cite>sub_dirs</cite>: List of subdirectories to ensure exist within <cite>base_dir</cite>.</p></li>
+</ul>
+</div></blockquote>
+</li>
+<li><p><strong>Returns</strong>: List of full paths to the subdirectories.</p></li>
+</ul>
+</section>
+<section id="command-line-arguments">
+<h2>Command-Line Arguments<a class="headerlink" href="#command-line-arguments" title="Link to this heading"></a></h2>
+<p>The script accepts several command-line arguments to configure the input, output, and behavior of the event generation process.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>usage:<span class="w"> </span>Pythia<span class="w"> </span>Event<span class="w"> </span>Generator<span class="w"> </span><span class="o">[</span>-h<span class="o">]</span><span class="w"> </span><span class="o">[</span>-n<span class="w"> </span>NUM_EVENTS<span class="o">]</span><span class="w"> </span><span class="o">[</span>-i<span class="w"> </span>INPUT<span class="o">]</span><span class="w"> </span><span class="o">[</span>-d<span class="w"> </span>INPUT_DIR<span class="o">]</span>
+<span class="w">                              </span><span class="o">[</span>-o<span class="w"> </span>OUTPUT_DIR<span class="o">]</span><span class="w"> </span><span class="o">[</span>-s<span class="w"> </span>SUFFIX<span class="o">]</span><span class="w"> </span><span class="o">[</span>-t<span class="o">]</span>
+
+optional<span class="w"> </span>arguments:
+<span class="w">  </span>-h,<span class="w"> </span>--help<span class="w">            </span>Show<span class="w"> </span>this<span class="w"> </span><span class="nb">help</span><span class="w"> </span>message<span class="w"> </span>and<span class="w"> </span><span class="nb">exit</span>
+<span class="w">  </span>-n<span class="w"> </span>NUM_EVENTS,<span class="w"> </span>--num_events<span class="w"> </span>NUM_EVENTS
+<span class="w">                        </span>Number<span class="w"> </span>of<span class="w"> </span>events<span class="w"> </span>to<span class="w"> </span>generate<span class="w"> </span><span class="o">(</span>default:<span class="w"> </span><span class="m">2000</span><span class="o">)</span>
+<span class="w">  </span>-i<span class="w"> </span>INPUT,<span class="w"> </span>--input<span class="w"> </span>INPUT
+<span class="w">                        </span>Input<span class="w"> </span>.cmnd<span class="w"> </span>file,<span class="w"> </span>list<span class="w"> </span>of<span class="w"> </span>files,<span class="w"> </span>or<span class="w"> </span>directory<span class="w"> </span>containing<span class="w"> </span>.cmnd<span class="w"> </span>files
+<span class="w">  </span>-d<span class="w"> </span>INPUT_DIR,<span class="w"> </span>--input_dir<span class="w"> </span>INPUT_DIR
+<span class="w">                        </span>Input<span class="w"> </span>directory<span class="w"> </span>containing<span class="w"> </span>.cmnd<span class="w"> </span>files<span class="w"> </span><span class="o">(</span>default:<span class="w"> </span>db/Temp/Pythia/cmnd<span class="o">)</span>
+<span class="w">  </span>-o<span class="w"> </span>OUTPUT_DIR,<span class="w"> </span>--output_dir<span class="w"> </span>OUTPUT_DIR
+<span class="w">                        </span>Base<span class="w"> </span>output<span class="w"> </span>directory<span class="w"> </span><span class="k">for</span><span class="w"> </span>generated<span class="w"> </span>files<span class="w"> </span><span class="o">(</span>default:<span class="w"> </span>db/Temp/Pythia<span class="o">)</span>
+<span class="w">  </span>-s<span class="w"> </span>SUFFIX,<span class="w"> </span>--suffix<span class="w"> </span>SUFFIX
+<span class="w">                        </span>Suffix<span class="w"> </span><span class="k">for</span><span class="w"> </span>the<span class="w"> </span>output<span class="w"> </span>files<span class="w"> </span><span class="o">(</span>default:<span class="w"> </span>output<span class="o">)</span>
+<span class="w">  </span>-t,<span class="w"> </span>--time<span class="w">            </span>Include<span class="w"> </span>timestamp<span class="w"> </span><span class="k">in</span><span class="w"> </span>output<span class="w"> </span>filenames
+</pre></div>
+</div>
+<p>### Example Usage:</p>
+<ol class="arabic">
+<li><p><strong>Generate events from a single configuration file:</strong></p>
+<blockquote>
+<div><div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>pythia_event_generator.py<span class="w"> </span>--input<span class="w"> </span>config_file.cmnd<span class="w"> </span>--num_events<span class="w"> </span><span class="m">5000</span>
+</pre></div>
+</div>
+</div></blockquote>
+</li>
+<li><p><strong>Generate events from multiple `.cmnd` files listed in the argument:</strong></p>
+<blockquote>
+<div><div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>pythia_event_generator.py<span class="w"> </span>--input<span class="w"> </span><span class="s2">&quot;config1.cmnd,config2.cmnd&quot;</span><span class="w"> </span>--output_dir<span class="w"> </span>/path/to/output
+</pre></div>
+</div>
+</div></blockquote>
+</li>
+<li><p><strong>Generate events from all `.cmnd` files in a directory, adding a timestamp to the output files:</strong></p>
+<blockquote>
+<div><div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>pythia_event_generator.py<span class="w"> </span>--input<span class="w"> </span>/path/to/config_dir<span class="w"> </span>--time
+</pre></div>
+</div>
+</div></blockquote>
+</li>
+</ol>
+</section>
+<section id="directory-management">
+<h2>Directory Management<a class="headerlink" href="#directory-management" title="Link to this heading"></a></h2>
+<p>The script creates subdirectories within the base output directory for storing <cite>.lhe</cite> and <cite>.hepmc</cite> files. These directories are automatically created if they do not exist, ensuring a structured organization for the output files.</p>
+<p>### Example:</p>
+<p>If the base output directory is <cite>db/Temp/Pythia</cite>, the following subdirectories will be created:</p>
+<ul class="simple">
+<li><p><cite>db/Temp/Pythia/lhe</cite></p></li>
+<li><p><cite>db/Temp/Pythia/hepmc</cite></p></li>
+</ul>
+</section>
+<section id="conclusion">
+<h2>Conclusion<a class="headerlink" href="#conclusion" title="Link to this heading"></a></h2>
+<p>The Pythia Event Generator script is a powerful tool for particle physics simulations, allowing users to customize input and output handling through a flexible command-line interface. By supporting multiple input formats and structured output, this script simplifies the process of generating Pythia events for different particle configurations.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="PythiaConf.html" class="btn btn-neutral float-left" title="Pythia Simulation Interface" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Paul Nathaniel Swallow, Théo Reymermier, Anna Jane Mullin, Sofie Nordahl Erner.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

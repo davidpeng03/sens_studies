@@ -1,0 +1,18 @@
+image: python:3.10-alpine
+
+stages:
+  - deploy
+
+pages:
+  tags:
+    - sphinx
+  stage: deploy
+  script:
+    - python3 -m pip install -r Docs/requirements.txt
+    - make -C Docs/manual html
+    - mv Docs/manual/build/html public
+  artifacts:
+    paths:
+      - public
+  only:
+    - master

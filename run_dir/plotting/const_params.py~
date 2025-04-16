@@ -1,0 +1,409 @@
+# -------- const_params --------
+# File containing values of physical parameters
+# ------------------------------
+
+# ------------------------------
+# ---------- Libaries ----------
+# ------------------------------
+import scipy.constants as sc
+import requests
+import pandas as pd
+import string
+import math
+import numpy as np
+import sys
+sys.path.append('/home/serner/Documents/Anubis/ufo_models')
+
+from particle import Particle
+#from particle pdgid
+
+from tabulate import tabulate
+from common_funcs import closest
+
+# ------------------------------
+# ---------- Functions ---------
+# ------------------------------
+
+# ------------------------------
+# ---------- Parameters --------
+# ------------------------------
+
+# ---------- General --------
+pi = math.pi
+
+kg_to_GeV = sc.c**2/(10**9*sc.eV)
+hbar_conv = (10**(-6))/sc.e # J Hz^(-1) = kg m^2 s^(-2) * s
+
+sw2 = 0.231 #float(sc.physical_constants['weak mixing angle'][0])
+Gf = float(sc.physical_constants['Fermi coupling constant'][0]) #1.1663787*10**(-5)
+aS = 0.1185
+
+# ---------- CKLM Matrix --------
+# https://pdg.lbl.gov/2022/reviews/rpp2022-rev-ckm-matrix.pdf
+# [ [Vud, Vus, Vub], [Vcd, Vcs, Vcb], [Vtd, Vts, Vtb]]
+CKM_matrix = [
+    [ 0.97373, 0.22500, 0.00369 ],
+    [ 0.22486, 0.97349, 0.04182 ],
+    [ 0.00857, 0.04110, 0.999118 ]
+]
+
+# --- Simple running of alpha_S ---
+# https://doi.org/10.1016/S0378-4754(00)00172-5
+def WFunc(z):
+    sig = - 1 - math.log(-z)
+    M1 = 0.3361
+    M2 = -0.0042
+    M3 = -0.0201
+
+    D1 = 1 + (M1 * np.sqrt(sig/2))/(1+M2*sig*np.exp(M3*np.sqrt(sig)))
+
+    return -1 - sig - (2/M1)*(1 - 1/D1)
+
+#1604.08082
+def lamFunc(nf):
+    mi = nf - 1
+    
+    if nf ==3:
+        return 0.34
+    elif nf < 3:    
+        lnext = lamFunc(nf+1)
+        mq = mQlist[mi]
+
+        return (mq**(2/(33-2*(nf+1)))*lnext)**(1+2/(2*(nf+1)-33))
+    else:
+        lprevious = lamFunc(nf-1)
+        mq = mQlist[mi]
+
+        return lprevious*(lprevious/mq)**(2/(33-2*nf))
+
+def aSrun(Q):
+    nf = 0
+    for m in mQlist:
+        if m**2 < Q**2:
+            nf +=1
+
+    lam = 0.48 #lamFunc(nf)
+
+    # http://hyperphysics.phy-astr.gsu.edu/hbase/Forces/couple.html#c2
+    #N1 = 12*pi
+    #D1 = (33 - 2*nf)*np.log(Q**2/lam**2) 
+
+    #1604.08082
+    b0 = 11 - (2/3)*nf
+    b1 = 102 - (38/3)*nf
+
+    z = - (b0/(math.e*b1))*(lam**2/Q**2)**(b0**2/b1)
+
+    N1 = -4*pi*b0
+    D1 = b1*(1+WFunc(z))
+
+    #One loop
+    #N1 = 4*pi
+    #D1 = b0*np.log(Q**2/lam**2)
+
+    if (D1 != 0):
+        return (N1/D1)
+    else:
+        return 0
+
+def aSrun_1(Q):
+    nf = 0
+    for m in mQlist:
+        if m**2 < Q**2:
+            nf +=1
+
+    lam = lamFunc(nf)
+
+    #1604.08082
+    b0 = 11 - (2/3)*nf
+
+    N1 = 4*pi
+    D1 = b0*np.log(Q**2/lam**2)
+
+    if (D1 != 0 and N1 != 0):
+        return (N1/D1)#/1.1723008780917201
+    else:
+        return 0
+
+# Using Hyperiso https://github.com/Hyperiso/Hyperiso/tree/develop
+inFile = r'/home/serner/Documents/Anubis/ufo_models/alpha_s_running.csv'
+alphaFile = open(inFile,'r')
+
+lines = alphaFile.readlines()
+
+m_vals = [ float(lines[i].split(",")[0].strip()) for i in range(1,len(lines)) ]
+alpha_vals = [ float(lines[i].split(",")[1].strip()) for i in range(1,len(lines)) ]
+
+# ------------------------------
+# --------- Fermions -----------
+# ------------------------------
+# ---------- Leptons -----------
+lepList = Particle.findall(lambda p: p.pdgid.is_lepton and p.mass != None and p.charge == 1.0)
+mLlist = np.zeros(len(lepList))
+
+for i in range(0,len(lepList)):
+    mLlist[i] = lepList[i].mass * 10**(-3)
+mLlist.sort()
+
+# ---------- Quarks -----------
+qList = Particle.findall(lambda p: p.pdgid.is_quark and p.charge > 0)
+mQlist = np.zeros(len(qList))
+
+for i in range(0,len(qList)):
+    mQlist[i] = qList[i].mass * 10**(-3)
+
+mQlist.sort()
+mUlist = [mQlist[0],mQlist[3],mQlist[5]]
+mDlist = [mQlist[1],mQlist[2],mQlist[4]]
+
+# ------------------------------
+# ---------- Mesons ------------
+# ------------------------------
+
+# ---------- Meson Masses --------
+mMasses ={
+    # -- From https://pdglive.lbl.gov/ParticleGroup.action?node=MXXX005&init=0 --
+    # Charged
+    "mPion": 139.57039*10**(-3),
+    "mKaon": 493.677*10**(-3),
+    "mD": 1869.66*10**(-3),
+    "mDs": 1968.35*10**(-3),
+    "mB": 5279.34*10**(-3),
+    "mBc": 6274.47*10**(-3),
+    "mEtac": 2983.9*10**(-3),
+    "mD+*": 2010.26*10**(-3),
+    "mDs+*": 2112.2*10**(-3),
+    "mRho": 775.26*10**(-3),
+
+    # Neutral
+    "mPion0": 134.9768*10**(-3),
+    "mEta": 547.862*10**(-3),
+    "mRho0": 775.26*10**(-3),
+    "mOmega0": 782.66*10**(-3),
+    "mEta'": 957.78*10**(-3),
+    "mPhi0": 1019.461*10**(-3),
+    #"mKaon0": 497.611*10**(-3),
+    "mBs": 5366.92*10**(-3),
+    "mJ/Psi0": 3096.900*10**(-3)
+}
+
+# ---------- Import using particle Python Module
+mMasses2 = {}
+
+# Pseudo-Scalar
+P0List = Particle.findall(lambda p: p.pdgid.is_meson and p.J == 0 and p.charge == 0) # neutral
+PList = Particle.findall(lambda p: p.pdgid.is_meson and p.J == 0 and p.charge != 0) # charged
+# Vector
+V0List = Particle.findall(lambda p: p.pdgid.is_meson and p.J == 1 and p.charge == 0) # neutral
+VList = Particle.findall(lambda p: p.pdgid.is_meson and p.J == 1 and p.charge != 0) # charged
+
+MesList1 = [P0List, PList, V0List, VList]
+
+for TypeList in MesList1:
+    for p in TypeList:
+        parName = p.name
+
+        """ for splitting up nameing scheme
+        if p.name.find("(") == -1:
+            parName = p.name
+        else:
+            test1=np.array(p.name.strip().split("(")).flatten()
+            test2=[Pi.split(")") for Pi in test1]
+            test3= list(pd.core.common.flatten(test2))
+            test4 = list(filter(None, test3))
+
+            if len(test4) == 2:
+                if  test4[0] not in mMasses2:
+                    parName = test4[0]
+            else:
+                print("-------")
+                print(p.name)
+                print(test4)
+        """
+        if parName != "" and p.mass != None:
+            mMasses2[parName] = float(p.mass)*10**(-3)
+
+# ---------- Meson Decay Constants --------
+mDecays ={
+    # -- From https://pdg.lbl.gov/2022/reviews/rpp2022-rev-pseudoscalar-meson-decay-cons.pdf --
+    # Charged
+    "fPion": 130.2*10**(-3),
+    "fKaon": 155.7*10**(-3),
+    "fD": 212.0*10**(-3),
+    "fDs": 249.9*10**(-3),
+    "fB": 190.0*10**(-3),
+    "fBs": 320.0*10**(-3),
+    # Neutral
+    "fPion0": 130*10**(-3),
+
+    # -- From https://arxiv.org/abs/1805.08567    
+    # Charged
+    "fBc": 434*10**(-3),
+    # Neutral
+    "fEta": 81.7*10**(-3),
+    "fEta'": -94.7*10**(-3),
+    "fEtac": 237*10**(-3),
+}
+# ---------- Meson Constants --------
+mKh = {
+    # -- From https://arxiv.org/abs/1805.08567    
+    "kRho0": 1 - 2*sw2,
+    "kOmega0": (4/3)*sw2,
+    "kPhi0": (4/3)*sw2 - 1,
+    "kJ/Psi0": 1 - (8/3)*sw2
+}
+mgh = {
+    # -- From https://arxiv.org/abs/1805.08567    
+    # Vector Charged
+    "gRho": 0.162,
+    "gD+*": 0.535,
+    "gDs+*": 0.650,
+    # Vector Neutral
+    "gRho0": 0.162,
+    "gOmega0": 0.153,
+    "gPhi0": 0.234,
+    "gJ/Psi0": 1.29
+}
+# [ [Vud, Vus, Vub], [Vcd, Vcs, Vcb], [Vtd, Vts, Vtb]]
+mCKM = {
+    "VPion": CKM_matrix[0][0],
+    "VKaon": CKM_matrix[0][1],
+    "VD": CKM_matrix[1][0],
+    "VDs": CKM_matrix[1][1],
+    "VB": CKM_matrix[0][2],
+    "VBs": CKM_matrix[0][1],
+    "VBc": CKM_matrix[1][2],
+    "VRho": CKM_matrix[0][0],
+    "VD+*": CKM_matrix[1][0],
+    "VDs+*": CKM_matrix[1][1]
+}
+
+# ---------- Meson Class --------
+class MesClass:
+    instances = [] # list of instances
+    def __init__(self, name="", mass=0):
+        self.name = name
+        self.mass = mass
+        self.__class__.instances.append(self) # add to list of instances
+
+    # For printing
+    def __repr__(self):  
+        return "% s" % (self.name)  
+
+# Pseduo-scalar mesons
+class Pseudo(MesClass):
+    def __init__(self, name="", mass=0, fVal=0):
+        MesClass.__init__(self,name,mass)
+        self.fVal = fVal # decay constant
+
+class ChargedPseudo(Pseudo):
+    ChargedPseudo_int = []
+    def __init__(self, name="", mass=0, fVal=0, CKMVal=0):
+        Pseudo.__init__(self,name,mass,fVal)
+        self.CKMVal = CKMVal # Associated CKM matrix element
+        self.__class__.ChargedPseudo_int.append(self)
+
+class NeutralPseudo(Pseudo):
+    NeutralPseudo_int = []
+    def __init__(self, name="", mass=0, fVal=0):
+        Pseudo.__init__(self,name,mass,fVal)
+        self.__class__.NeutralPseudo_int.append(self)
+
+# Vector mesons
+class Vector(MesClass):
+    def __init__(self, name="", mass=0, gVal=0):
+        MesClass.__init__(self,name,mass)
+        self.gVal = gVal # decay constant
+
+class ChargedVector(Vector):
+    ChargedVector_int = []
+    def __init__(self, name="", mass=0, gVal=0, CKMVal=0):
+        Vector.__init__(self,name,mass,gVal)
+        self.CKMVal = CKMVal # Associated CKM matrix element
+        self.__class__.ChargedVector_int.append(self)
+
+class NeutralVector(Vector):
+    NeutralVector_int = []
+    def __init__(self, name="", mass=0, gVal=0, kVal=0):
+        Vector.__init__(self,name,mass,gVal)
+        self.kVal = kVal # Dimensionlass factor
+        self.__class__.NeutralVector_int.append(self)
+
+#----- Meson initialisation -----
+# Meson Lists
+PseMesList = ["Pion","Kaon","D","Ds","B","Bc"]
+PseMes0List = ["Pion0","Eta","Eta'","Etac"]
+VecMesList = ["Rho","D+*","Ds+*"]
+VecMes0List = ["Rho0","Omega0","Phi0","J/Psi0"]
+
+# Charged Pseudo-Scalars
+PMes = [ChargedPseudo() for mes in PseMesList]
+
+for i in range(0,len(PMes)):
+    PMes[i].name = PseMesList[i]
+    PMes[i].mass = mMasses["m"+PseMesList[i]]
+    PMes[i].fVal = mDecays["f"+PseMesList[i]]
+    PMes[i].CKMVal = mCKM["V"+PseMesList[i]]
+#print("Charged Pseudo-Scalars: ",ChargedPseudo.ChargedPseudo_int)
+
+# Neutral Pseudo-Scalars
+P0Mes = [NeutralPseudo() for mes in PseMes0List]
+
+for i in range(0,len(P0Mes)):
+    P0Mes[i].name = PseMes0List[i]
+    P0Mes[i].mass = mMasses["m"+PseMes0List[i]]
+    P0Mes[i].fVal = mDecays["f"+PseMes0List[i]]
+#print("Neutral Pseudo-Scalars: ",NeutralPseudo.NeutralPseudo_int)
+
+# Charged Vectors
+VMes = [ChargedVector() for mes in VecMesList]
+
+for i in range(0,len(VMes)):
+    VMes[i].name = VecMesList[i]
+    VMes[i].mass = mMasses["m"+VecMesList[i]]
+    VMes[i].gVal = mgh["g"+VecMesList[i]]
+    VMes[i].CKMVal = mCKM["V"+VecMesList[i]]
+#print("Charged Vectors: ",ChargedVector.ChargedVector_int)
+
+# Neutral Vectors
+V0Mes = [NeutralVector() for mes in VecMes0List]
+
+for i in range(0,len(V0Mes)):
+    V0Mes[i].name = VecMes0List[i]
+    V0Mes[i].mass = mMasses["m"+VecMes0List[i]]
+    V0Mes[i].gVal = mgh["g"+VecMes0List[i]]
+    V0Mes[i].kVal = mKh["k"+VecMes0List[i]]
+#print("Neutral Vectors: ",NeutralVector.NeutralVector_int)
+
+# ------------------------------
+# ---------- Printing ----------
+# ------------------------------
+tableM = [
+[ "Meson" , "Mass (GeV)", "Decay Const. (GeV)" ],
+]
+
+#print(mMasses.keys())
+#print(mDecays.keys())
+
+for meson in mMasses.keys():
+    if ("f"+meson[1:]) in mDecays: 
+        mdec = mDecays["f"+meson[1:]]
+    elif ("g"+meson[1:]) in mgh:
+        mdec = mgh["g"+meson[1:]]
+    else:
+        mdec = "?"
+
+    tableM.append([ meson[1:], mMasses[meson], mdec])
+
+for meson in mDecays.keys():
+    massName = "m"+meson[1:]
+    if massName not in mMasses:
+        tableM.append([ meson[1:], "?", mDecays[meson]])
+
+for meson in mgh.keys():
+    massName = "m"+meson[1:]
+    if massName not in mMasses:
+        tableM.append([ meson[1:], "?", mgh[meson]])
+
+
+#print(tabulate(tableM, headers='firstrow', tablefmt='fancy_grid'))

@@ -1,0 +1,31 @@
+#!/bin/bash
+
+executable = execute_mg.sh
+#universe = vanilla
+
+transfer_input_files = MG5_aMC_v3_5_4.tar
+#HNL_condor_CCDY_qqe.tar.gz
+#jobscript_hnl_Mathusla.txt
+#transfer_output_files = tag_1_pythia8_${mass}_${decaymode}_${runnumber}.hepmc.gz
+
+#initialdir = /r04/atlas/amullin/ANUBIS/Simulations/MG5_aMC_v3_5_4
+#Requirements = (HAS_r04)
+
+output = output_mg.out
+error = error_mg.err
+log = log_mg.log
+
+getenv = true
+
+should_transfer_files = YES
+when_to_transfer_output = ON_EXIT
+transfer_output_files = MG5_aMC_v3_5_4_SS1
+
+request_cpus = 5
+request_memory = 1G
+request_disk = 1G
+
+max_retries = 3
+notification = Error
+
+queue

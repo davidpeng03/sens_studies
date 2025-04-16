@@ -1,0 +1,43 @@
+channel, 
+(12,-12,12);nu_Z_nu_nu
+(11,-11,12);lep_W_lep_nu
+(11,-11,14);nu_Z_lep_lep
+(11,-11,16);nu_Z_lep_lep
+(11,-13,14);lep_W_lep_nu
+(13,-11,12);lep_W_lep_nu
+(111,12);nu_Z_PseMes0
+(111,14);nu_Z_PseMes0
+(111,16);nu_Z_PseMes0
+(211,11);lep_W_PseMes
+(13,-13,12);nu_Z_lep_lep
+(13,-13,14);nu_Z_lep_lep
+(13,-13,16);nu_Z_lep_lep
+(211,13);lep_W_PseMes
+(221,12);nu_Z_PseMes
+(221,14),nu_Z_PseMes
+(221,16);nu_Z_PseMes
+(113,12);nu_Z_VecMes0
+(113,14);nu_Z_VecMes0
+(113,16);nu_Z_VecMes0
+(213, 11);lep_W_VecMes
+(223, 12);nu_Z_VecMes0
+(223,14);nu_Z_VecMes0
+(223,16);nu_Z_VecMes0
+(213,13);lep_W_VecMes
+(331,12);nu_Z_PseMes0
+(331,14);nu_Z_PseMes0
+(331,16);nu_Z_PseMes0
+(333,12);nu_Z_VecMes0
+(333,14);nu_Z_VecMes0
+(333,16);nu_Z_VecMes0
+(11,-15,16);lep_W_nu_lep
+(15,-11,12);lep_W_nu_lep
+(13,-15,16);lep_W_nu_lep
+(15,-13,14);lep_W_nu_lep
+(431, 11);lep_W_PseMes
+(431, 13);lep_W_PseMes
+(433, 11);lep_W_VecMes
+(433, 13);lep_W_VecMes
+(441, 12);nu_Z_PseMes0
+(441,14);nu_Z_PseMes0
+(441,16)nu_Z_PseMes0

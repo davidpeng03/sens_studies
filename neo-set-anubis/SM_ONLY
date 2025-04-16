@@ -1,0 +1,137 @@
+// Expression Tree
+digraph {
+	ZERO [label="ZERO
+0.0"]
+	cabi [label="cabi
+0.488"]
+	mZinput [label="mZinput
+91.188"]
+	MHinput [label="MHinput
+125"]
+	swsq [label="swsq
+0.225"]
+	aEWM1 [label="aEWM1
+127.9"]
+	Gf [label="Gf
+1.1663900000000002e-05"]
+	aS [label="aS
+0.118"]
+	ymd [label="ymd
+0.00467"]
+	ymu [label="ymu
+0.0026"]
+	yms [label="yms
+0.093"]
+	ymc [label="ymc
+1.42"]
+	ymb [label="ymb
+4.7"]
+	ymt [label="ymt
+174.3"]
+	ME [label="ME
+0.000511"]
+	MM [label="MM
+0.1057"]
+	MTA [label="MTA
+1.777"]
+	MU [label="MU
+0.0026"]
+	MC [label="MC
+1.42"]
+	MT [label="MT
+174.3"]
+	MD [label="MD
+0.00467"]
+	MS [label="MS
+0.093"]
+	MB [label="MB
+4.7"]
+	WT [label="WT
+1.50833649"]
+	WZ [label="WZ
+2.44140351"]
+	WW [label="WW
+2.04759951"]
+	WH [label="WH
+0.00282299"]
+	cw [label="cw
+0.8803408430829505"]
+	sw [label="sw
+0.4743416490252569"]
+	aEW [label="aEW
+0.007818608287724784"]
+	G [label="G
+1.2177157847767197"]
+	MZ [label="MZ
+91.188"]
+	MH [label="MH
+125.0"]
+	v [label="v
+246.21845810181634"]
+	CKM1x1 [label="CKM1x1
+0.8832723450938338"]
+	CKM1x2 [label="CKM1x2
+0.46886028237891875"]
+	CKM2x1 [label="CKM2x1
+-0.46886028237891875"]
+	CKM2x2 [label="CKM2x2
+0.8832723450938338"]
+	ee [label="ee
+0.313451000049529"]
+	GH [label="GH
+-5.2460906430886786e-05"]
+	Gphi [label="Gphi
+-7.978666561793256e-05"]
+	yb [label="yb
+0.026995554250465494"]
+	yc [label="yc
+0.008156103624608722"]
+	yd [label="yd
+2.682324220205826e-05"]
+	ys [label="ys
+0.0005341673500624022"]
+	yt [label="yt
+1.0011330012459863"]
+	yu [label="yu
+1.4933710861959631e-05"]
+	g1 [label="g1
+0.3560564098694146"]
+	gw [label="gw
+0.6608127300093755"]
+	swsq -> cw
+	swsq -> sw
+	aEWM1 -> aEW
+	aS -> G
+	mZinput -> MZ
+	MHinput -> MH
+	Gf -> v
+	cabi -> CKM1x1
+	cabi -> CKM1x2
+	cabi -> CKM2x1
+	cabi -> CKM2x2
+	aEW -> ee
+	MH -> GH
+	v -> GH
+	G -> GH
+	MT -> GH
+	MH -> Gphi
+	v -> Gphi
+	G -> Gphi
+	MT -> Gphi
+	ymb -> yb
+	v -> yb
+	ymc -> yc
+	v -> yc
+	v -> yd
+	ymd -> yd
+	v -> ys
+	yms -> ys
+	ymt -> yt
+	v -> yt
+	ymu -> yu
+	v -> yu
+	cw -> g1
+	ee -> g1
+	sw -> gw
+	ee -> gw
+}

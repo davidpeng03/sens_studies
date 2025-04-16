@@ -1,0 +1,656 @@
+import math
+import argparse
+import csv
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_pdf import PdfPages
+import uproot
+import awkward as ak
+from particle import PDGID, Particle, Charge
+import seaborn as sns
+import pickle
+#from scipy.interpolate import UnivariateSpline
+#import scipy
+import os
+import re
+from common_funcs import *
+from const_params import *
+import sys
+from decimal import Decimal
+from matplotlib.colors import LogNorm
+
+sys.path.append(os.path.abspath("/r04/atlas/amullin/ANUBIS/SET_ANUBIS/"))
+
+##### Added from save_ :
+from constants import *
+from helpers import *
+from plot import *
+from geometry import *
+from Common_LLP_processing import *
+from processor_functions import *
+
+#from Pheno_Eqs import * 
+sns.set_style("white")
+
+lumi = 3. / (10 ** -10) # iab, HL-LHC
+hbar = 6.582e-25 # GeV.s
+n_llp_target_nobkg = 4
+n_llp_target_bkg = 90
+c_const = 3.e+8
+
+###### For plotting: 
+# set VeN1 scan:[1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1.]
+#set MN1 scan:[0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0]
+fixed_coupling_value = 1e-2 # change to coupling at which to plot mass range
+fixed_mass_value = 1.1 # change to mass at which to plot coupling range
+processes = ["CCDY_qqe", "CCDY_eev", "CCDY_qqv"]
+#processes = ["NCDY_qqe"]
+#processes = ["NCDY_qqe", "NCDY_eev"]
+
+def extract_inner_keys_values(d):
+    result = set()
+    
+    def recurse(current_dict):
+        for key, value in current_dict.items():
+            if isinstance(value, dict):
+                recurse(value)
+            else:
+                result.add((key, value))
+    
+    recurse(d)
+    return result
+
+def GetParser():
+    """Argument parser for reading Ntuples script."""
+    parser = argparse.ArgumentParser(
+        description="Processing simulations command line options."
+    )
+    parser.add_argument(
+        "--userconfig",
+        "-c",
+        type=str,
+        required=True,
+        help="Specify the config for the user e.g. paths",
+    )
+
+    return parser
+
+
+def load_txt_file(file_path):
+    """
+    Load the content of a txt file into a list of dictionaries
+    """
+    data = []
+    try:
+        with open(file_path, 'r') as f:
+            # read header to determine col indices
+            headers = f.readline().strip().split(",")
+            for line in f:
+                values = line.strip().split(",")
+                if len(values) == len(headers):
+                    row = {headers[i]: values[i] for i in range(len(headers))}
+                    data.append(row)
+    except FileNotFoundError:
+        print(f"Warning: File {file_path} not found.")
+    return data
+
+def find_value_in_file(data,mass,column_name):
+    """
+    Find the value in the loaded data for a specific mass and column name.
+    """
+    for row in data:
+        if float(row["mass"]) == float(mass):
+            return row.get(column_name, None)
+    return None
+
+def get_column_value(group, column_name, base_path, file_cache):
+    """
+    Fetch the value for a specific column for a given (mass, coupling_point, process) combination.
+    Uses a cache to avoid reloading the same file multiple times.
+    """
+    mass, coupling_point, process = group
+    if coupling_point < 0.0001:
+        coupling_point_str = f"{Decimal(coupling_point):.1e}".replace('.0','')
+    else:
+        coupling_point_str = str(coupling_point).replace('.','p')
+    
+    filename = f"ctau_coupling{coupling_point_str}_{process}.txt"
+    file_path = os.path.join(base_path, filename)
+    
+    if file_path not in file_cache: # avoid reloading the same file 
+        file_cache[file_path] = load_txt_file(file_path)
+    
+    file_data = file_cache[file_path]
+    return find_value_in_file(file_data, mass, column_name)
+
+linestyle_str = [
+     ('solid', 'solid'),      # Same as (0, ()) or '-'
+     ('dotted', 'dotted'),    # Same as (0, (1, 1)) or ':'
+     ('dashed', 'dashed'),    # Same as '--'
+     ('dashdot', 'dashdot')]  # Same as '-.'
+
+linestyle_tuple = [
+     ('loosely dotted',        (0, (1, 10))),
+     ('dotted',                (0, (1, 1))),
+     ('densely dotted',        (0, (1, 1))),
+     ('long dash with offset', (5, (10, 3))),
+     ('loosely dashed',        (0, (5, 10))),
+     ('dashed',                (0, (5, 5))),
+     ('densely dashed',        (0, (5, 1))),
+
+     ('loosely dashdotted',    (0, (3, 10, 1, 10))),
+     ('dashdotted',            (0, (3, 5, 1, 5))),
+     ('densely dashdotted',    (0, (3, 1, 1, 1))),
+
+     ('dashdotdotted',         (0, (3, 5, 1, 5, 1, 5))),
+     ('loosely dashdotdotted', (0, (3, 10, 1, 10, 1, 10))),
+     ('densely dashdotdotted', (0, (3, 1, 1, 1, 1, 1)))]
+
+parser = GetParser()
+args = parser.parse_args()
+user_config_path = args.userconfig
+user_config = load_config(user_config_path)
+print("Using user config: ", user_config)
+scanfile = user_config['scanfile'] # this is samples_to_process.csv
+llp_type = user_config['llp_type']
+nevents = user_config['nevents']
+cuts_dicts_path = user_config['cuts_dicts_path']
+
+print("LLP type: ", llp_type)
+samples_to_process_df = pd.read_csv(scanfile, index_col=0) # read csv into df
+
+# need to locate list of SampleY numbers to process as indices in samples_to_process_df, and then search for the cuts_dicts of those Ys in the relevant directory
+
+# could be some SampleYs that have not been processed in save_ or apply_ yet and consequently do not have cuts_dicts. If so then skip those Ys. So do cross-check on which numbers appear in both lists 
+
+available_dicts_paths = []
+unavailable_dicts = []
+
+for SampleY_index in samples_to_process_df.index:
+    SSX_name = samples_to_process_df.loc[SampleY_index, 'SS']
+
+    #construct directory path where pkl files may be stored IF the acceptance chain has been run on this sample: 
+    cuts_dict_dir = os.path.join(cuts_dicts_path, str(SSX_name))
+
+    # check if dir exists
+    if os.path.isdir(cuts_dict_dir):
+        dict_files_in_directory = os.listdir(cuts_dict_dir)
+
+        # check if any file names contain index
+        for dict_file_name in dict_files_in_directory:
+            if str(SampleY_index) in dict_file_name and ".pkl" in dict_file_name:
+                available_dicts_paths.append(os.path.join(cuts_dict_dir, dict_file_name)) # may not use this list but could be good to check         
+    else:
+        unavailable_dicts.append(cuts_dict_dir)
+#        print(f"Directory {cuts_dict_dir} not found.")
+print("Directories not found: ", list(set(unavailable_dicts)))
+
+def match_process(SSX_prod_dec):
+    return SSX_prod_dec.split('_', 1)[1] # split on the first underscore and return everything after
+
+# apply match_process because it now doesn't matter what SSX the sample came from, just require sum of cuts_dict numbers for all samples that have matching (mass, coupling, process):
+samples_to_process_df['prod_dec'] = samples_to_process_df['SS'].apply(match_process)
+mass_column = [col for col in samples_to_process_df.columns if 'mass' in col.lower()] # for model independence, check which column is mass (and mixing later) 
+if len(mass_column) == 1:
+    mass_column = mass_column[0]
+elif len(mass_column) > 1:
+    raise ValueError("Multiple columns contain 'mass'. Please specify which one to use.")
+else:
+    raise ValueError("No column containing 'mass' found.")
+coupling_column = [col for col in samples_to_process_df.columns if 'mixing' in col.lower()]
+if len(coupling_column) == 1:
+    coupling_column = coupling_column[0]
+elif len(coupling_column) > 1:
+    raise ValueError("Multiple columns contain 'coupling'. Please specify which one to use.")
+else:
+    raise ValueError("No column containing 'coupling' found.")
+
+grouped = samples_to_process_df.groupby([mass_column,  coupling_column, 'prod_dec'])
+sample_sums_total = {}
+sample_sums_remaining = {}
+cross_group_mean = grouped['cross'].mean()
+cross_means_dict = cross_group_mean.to_dict() # convert to dictionary to match the sample_sums structure
+
+def sanity_checks():
+    for group, group_df in grouped:
+        print(f"Group: Mass = {group[0]}, Coupling = {group[1]}, Process = {group[2]}")
+        print("Cross values:")
+        print(group_df['cross'].values)  # Print all 'cross' values for this group
+        mean_cross = group_df['cross'].mean()
+        print(f"Mean of cross values: {mean_cross}")
+        print("Grouped indices (SampleYs): ")
+        print(group_df.index.values)
+        print()
+
+#sanity_checks() # call function to check cross-section and indices 
+
+base_directory_txt = "/r04/atlas/amullin/ANUBIS/SET_ANUBIS"
+file_cache_txt = {}
+avgdecpos = {} 
+
+for group, indices in grouped:
+#    print("group: ", group)
+    mass_value, coupling_point, process = group
+    total_nevents_sum = 0 # separate sum for every unique (mass, coupling, process) combination
+    remaining_nevents_sum = 0
+
+#    print("with indices: ")
+#    print(type(indices)) # this might be the issue - not the same indices as the SampleY numbers?
+
+    # loop over all indices in this group
+    for idx in indices.index:
+        # construct filename
+        for path_found in available_dicts_paths:
+            if str(idx) in path_found: 
+#                print("path found: ", path_found)
+                
+                # load numbers
+                with open(path_found, 'rb') as file:
+                    cuts_dict = pickle.load(file)
+                    total_nevents = cuts_dict['All weighted']
+#                    remaining_nevents = cuts_dict['Cavern decay weighted'] 
+                    remaining_nevents = cuts_dict['DeltaR(LLP,charged) > 0.5 weighted'] # use weighted versions
+                total_nevents_sum += total_nevents
+                remaining_nevents_sum += remaining_nevents
+#    print("has total nevents ", total_nevents_sum, " and remaining nevents ", remaining_nevents_sum)
+    # store these cuts values for each mass and coupling value for different processes. Could make into lists which then get moved to dfs?
+    sample_sums_total[group] = total_nevents_sum
+    sample_sums_remaining[group] = remaining_nevents_sum
+
+#    print(f"total nevents: {total_nevents_sum}")
+#    print(f"remaining nevents: {remaining_nevents_sum}")
+
+    #for group in groups:
+    this_avgdecpos = get_column_value(group, "hepmc_avgdecpos", base_directory_txt, file_cache_txt)
+    avgdecpos[group] = this_avgdecpos
+#    print(f"Group {group}: avgdecpos = {this_avgdecpos}")
+
+def plot_avgdecpos(avgdecpos, process, masses, couplings):
+    masses = sorted(masses)
+    couplings = sorted(couplings)
+    mass_grid, coupling_grid = np.meshgrid(masses,couplings)
+
+    avgdecpos_grid = np.zeros_like(mass_grid, dtype=float)
+
+    for i, coupling in enumerate(couplings):
+        for j, mass in enumerate(masses):
+            group = (mass, coupling, process)
+            avgdecpos_grid[i,j] = avgdecpos.get(group, np.nan) # use nan if value missing
+
+    plt.figure(figsize=(10,8))
+    cmap = plt.cm.viridis
+#    norm = plt.Normalize(vmin=np.nanmin(avgdecpos_grid), vmax=np.nanmax(avgdecpos_grid))
+    norm = LogNorm(vmin=np.nanmin(avgdecpos_grid[np.isfinite(avgdecpos_grid)]), 
+                   vmax=np.nanmax(avgdecpos_grid[np.isfinite(avgdecpos_grid)]))
+
+    heatmap = plt.pcolormesh(mass_grid, coupling_grid, avgdecpos_grid, cmap=cmap, norm=norm, shading='auto')
+    plt.colorbar(heatmap, label="avgdecpos")
+
+    mask = (avgdecpos_grid > 6) & (avgdecpos_grid < 21)
+    plt.contour(mass_grid, coupling_grid, mask, levels=[0.5], colors='red', linestyles='--', linewidths=2, label="6 < avg dec pos < 21 [m]")
+    plt.xlabel("Mass")
+    plt.ylabel("Coupling")
+    plt.yscale('log')
+    plt.legend()
+    plt.title(f"Average decay position for process {process}")
+    plt.tight_layout()
+    plt.show()
+
+br_dict_4evt = {}
+br_dict_4evt_all = {}
+br_dict_90evt = {}
+br_dict_90evt_all = {}
+
+def plot_BR_coupling(fixed_mass, processes):
+
+    plt.figure(figsize=(8,6))
+
+    colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
+    col_ind = 7
+
+    for process in processes:
+        col_ind+=1
+        # filter data for given fixed mass
+        filtered_sums_total = {group: total_nevents_sum for group, total_nevents_sum in sample_sums_total.items() if group[0] == fixed_mass and group[2] == process}
+        filtered_sums_remaining = {group: remaining_nevents_sum for group, remaining_nevents_sum in sample_sums_remaining.items() if group[0] == fixed_mass and group[2] == process}
+        crosssecs = {group: crosssec for group, crosssec in cross_means_dict.items() if group[0] == fixed_mass and group[2] == process}
+    
+        # extract coupling and total sum values for plotting
+        couplings = [group[1] for group in filtered_sums_total.keys()] # group[1] is coupling
+        total_sums = [total for total in filtered_sums_total.values()]
+        remaining_sums = [remaining for remaining in filtered_sums_remaining.values()]
+        cross = [xsec for xsec in crosssecs.values()]
+
+        print("list lengths for plotting: ")
+        print("total_sums")
+        print(len(total_sums))
+        print("remaining_sums")
+        print(len(remaining_sums))
+        print("couplings")
+        print(len(couplings))
+        print("cross sections")
+        print(len(cross))
+        print("and the couplings values are: ")
+        print(couplings)
+
+        # calculate BR
+        br_group_4evt = [((n_llp_target_nobkg / (cross_value * lumi)) * (total_sums_value / remaining_sums_value) if remaining_sums_value!=0 and cross_value!=0 else None) for cross_value, total_sums_value, remaining_sums_value in zip(cross, total_sums, remaining_sums)] # in case there is no background
+        
+        # calculate stat unc on the number of remaining events
+        
+        unc_br_group_4evt = [((n_llp_target_nobkg / (cross_value * lumi) ) * (total_sums_value / remaining_sums_value) * np.sqrt((1./total_sums_value) + (1./remaining_sums_value) ) if remaining_sums_value!=0 and cross_value!=0 else None) for cross_value, total_sums_value, remaining_sums_value in zip(cross, total_sums, remaining_sums)]
+
+        #    rel_unc_br_group_4evt = [unc / br for unc, br in zip(unc_br_group_4evt, br_group_4evt)] # should move below and use filtered lists instead 
+
+        print(" 4evt (unfiltered): ")
+        print("Coupling = ", couplings)
+        print("Branching ratio (4evt) = ", br_group_4evt)
+        print("Uncertainty (stat) = ", unc_br_group_4evt)
+
+        # removing None groups as they cause problems with the error bars
+
+        filtered_couplings, filtered_br_4evt, filtered_unc_4evt = zip(*[(x, y, z) for x, y, z in zip(couplings, br_group_4evt, unc_br_group_4evt) if y!=None and z!=None])
+        filtered_couplings = list(filtered_couplings)
+        filtered_br_4evt = list(filtered_br_4evt)
+        filtered_unc_4evt = list(filtered_unc_4evt)
+
+        print(" 4evt (filtered): ")
+        print(f" X values : {filtered_couplings}")
+        print(f" Y values : {filtered_br_4evt}")
+        print(f" Y unc : {filtered_unc_4evt}") 
+
+        br_group_90evt = [((n_llp_target_bkg / (cross_value * lumi) ) * (total_sums_value / remaining_sums_value) if remaining_sums_value!=0 and cross_value!=0 else None) for cross_value, total_sums_value, remaining_sums_value in zip(cross, total_sums, remaining_sums)] # in case there is non-negligible background
+        unc_br_group_90evt = [((n_llp_target_bkg / (cross_value * lumi) ) * ( (total_sums_value / remaining_sums_value) * np.sqrt((1./total_sums_value) + (1./remaining_sums_value)) ) if remaining_sums_value!=0 and cross_value!=0 else None) for cross_value, total_sums_value, remaining_sums_value in zip(cross, total_sums, remaining_sums)]
+
+        print(" 90evt (unfiltered): ")
+        print("Coupling = ", couplings)
+        print("Branching ratio (90evt) = ", br_group_90evt)
+        print("Uncertainty (stat) = ", unc_br_group_90evt)
+
+        # also remove None groups for 90evt BRs 
+
+        filtered_br_90evt, filtered_unc_90evt = zip(*[(x, y) for x, y in zip(br_group_90evt, unc_br_group_90evt) if x!=None and y!=None])
+        filtered_br_90evt = list(filtered_br_90evt)
+        filtered_unc_90evt = list(filtered_unc_90evt)
+
+        # create plot
+
+        plt.errorbar(filtered_couplings, filtered_br_4evt, yerr=filtered_unc_4evt, marker="o", color=colors[col_ind % len(colors)], label=f"zero background, process={process}", capsize=5, linestyle="None")
+        plt.errorbar(filtered_couplings, filtered_br_90evt, yerr=filtered_unc_90evt, marker="x", color=colors[col_ind % len(colors)], label=f"background, process={process}", capsize=5, linestyle="None")
+        #plt.scatter(couplings, br_group_4evt, marker='o', color='g', label="zero background")
+        #    plt.scatter(couplings, br_group_90evt, marker='x', color='b', label="background")
+
+
+    plt.xlabel('Coupling VeN1')
+    plt.ylabel('Branching Ratio')
+    plt.xscale('log')
+    plt.yscale('log')
+    plt.legend()
+    plt.grid(True)
+    plt.title(f"Branching ratio at fixed mass = {fixed_mass} GeV")
+    plt.show()
+
+def plot_BR_mass(fixed_couplings, process):
+
+    plt.figure(figsize=(8,6))
+    colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
+    col_ind = 7
+
+    for fixed_coupling in fixed_couplings:
+        for process in processes:
+            col_ind+=1
+            # filter data for given fixed mass
+            filtered_sums_total = {group: total_nevents_sum for group, total_nevents_sum in sample_sums_total.items() if group[1] == fixed_coupling and group[2] == process}
+            filtered_sums_remaining = {group: remaining_nevents_sum for group, remaining_nevents_sum in sample_sums_remaining.items() if group[1] == fixed_coupling and group[2] == process}
+            crosssecs = {group: crosssec for group, crosssec in cross_means_dict.items() if group[1] == fixed_coupling and group[2] == process}
+    
+            # extract mass and total sum values for plotting
+            masses = [group[0] for group in filtered_sums_total.keys()] # group[1] is mass
+            total_sums = [total for total in filtered_sums_total.values()]
+            remaining_sums = [remaining for remaining in filtered_sums_remaining.values()]
+            cross = [xsec for xsec in crosssecs.values()]
+        
+            print("list lengths for plotting: ")
+            print("total_sums")
+            print(len(total_sums))
+            print("remaining_sums")
+            print(len(remaining_sums))
+            print("masses")
+            print(len(masses))
+            print("cross sections")
+            print(len(cross))
+            print("and the mass values are: ")
+            print(masses)
+
+            # calculate BR
+
+            br_group_4evt = [((n_llp_target_nobkg / (cross_value * lumi)) * (total_sums_value / remaining_sums_value) if remaining_sums_value!=0 and cross_value!=0 else None) for cross_value, total_sums_value, remaining_sums_value in zip(cross, total_sums, remaining_sums)] # in case there is no background
+
+            # calculate stat unc on the number of remaining events
+        
+            unc_br_group_4evt = [((n_llp_target_nobkg / (cross_value * lumi) ) * (total_sums_value / remaining_sums_value) * np.sqrt((1./total_sums_value) + (1./remaining_sums_value) ) if remaining_sums_value!=0 and cross_value!=0 else None) for cross_value, total_sums_value, remaining_sums_value in zip(cross, total_sums, remaining_sums)]
+        
+            print(" 4evt (unfiltered): ")
+            print("Masses = ", masses)
+            print("Branching ratio (4evt) = ", br_group_4evt)
+            print("Uncertainty (stat) = ", unc_br_group_4evt)
+            
+            # removing None groups as they cause problems with the error bars
+
+            filtered_masses, filtered_br_4evt, filtered_unc_4evt = zip(*[(x, y, z) for x, y, z in zip(masses, br_group_4evt, unc_br_group_4evt) if y!=None and z!=None])
+            filtered_masses = list(filtered_masses)
+            filtered_br_4evt = list(filtered_br_4evt)
+            filtered_unc_4evt = list(filtered_unc_4evt)
+            
+            print(" 4evt (filtered): ")
+            print(f" X values : {filtered_masses}")
+            print(f" Y values : {filtered_br_4evt}")
+            print(f" Y unc : {filtered_unc_4evt}") 
+    
+            br_group_90evt = [((n_llp_target_bkg / (cross_value * lumi)) * (total_sums_value / remaining_sums_value) if remaining_sums_value!=0 and cross_value!=0 else None) for cross_value, total_sums_value, remaining_sums_value in zip(cross, total_sums, remaining_sums)] # in case there is non-negligible background 
+            unc_br_group_90evt = [((n_llp_target_bkg / (cross_value * lumi) ) * ( (total_sums_value / remaining_sums_value) * np.sqrt((1./total_sums_value) + (1./remaining_sums_value)) ) if remaining_sums_value!=0 and cross_value!=0 else None) for cross_value, total_sums_value, remaining_sums_value in zip(cross, total_sums, remaining_sums)]
+
+            print(" 90evt (unfiltered): ")
+            print("Masses = ", masses)
+            print("Branching ratio (90evt) = ", br_group_90evt)
+            print("Uncertainty (stat) = ", unc_br_group_90evt)
+            
+            # also remove None groups for 90evt BRs 
+            
+            filtered_br_90evt, filtered_unc_90evt = zip(*[(x, y) for x, y in zip(br_group_90evt, unc_br_group_90evt) if x!=None and y!=None])
+            filtered_br_90evt = list(filtered_br_90evt)
+            filtered_unc_90evt = list(filtered_unc_90evt)
+
+            eff_group = [((remaining_sums_value / total_sums_value) if remaining_sums_value!=0 else None) for total_sums_value, remaining_sums_value in zip(total_sums, remaining_sums)] 
+            unc_eff_group = [((remaining_sums_value / total_sums_value) * np.sqrt((1./total_sums_value) + (1./remaining_sums_value)) if remaining_sums_value!=0 else None) for total_sums_value, remaining_sums_value in zip(total_sums, remaining_sums)]
+
+            filtered_eff, filtered_unc_eff = zip(*[(x, y) for x, y in zip(eff_group, unc_eff_group) if x!=None and y!=None])
+            filtered_eff = list(filtered_eff)
+            filtered_unc_eff = list(filtered_unc_eff)
+
+            plot_BR = False
+            plot_eff = True
+            # create plot
+            if (plot_BR == True):
+                plt.errorbar(filtered_masses, filtered_br_4evt, yerr=filtered_unc_4evt, marker="o", color=colors[col_ind % len(colors)], label=f"zero background, process={process}, coupling={fixed_coupling}", capsize=5, linestyle="None")
+                plt.errorbar(filtered_masses, filtered_br_90evt, yerr=filtered_unc_90evt, marker="x", color=colors[col_ind % len(colors)], label=f"background, process={process}, coupling={fixed_coupling}", capsize=5, linestyle="None")
+                plt.ylabel("Branching Ratio")
+                plt.title(f"Mass vs branching ratio (geometry cut only)")
+            elif (plot_eff == True):
+                plt.errorbar(filtered_masses, filtered_eff, yerr=filtered_unc_eff, marker="x", color=colors[col_ind % len(colors)], label=f"process={process}, coupling={fixed_coupling}", capsize=5, linestyle="None")
+                plt.ylabel('Selection efficiency')
+                plt.title(f"Mass vs selection efficiency (all cuts)")
+            else:
+                print("No plot type selected. Please choose one of BR or eff for the mass range plot.")
+
+            #    plt.scatter(mass, br_group_4evt, marker='o', color='g', label="zero background")
+            #    plt.scatter(mass, br_group_90evt, marker='x', color='b', label="background")
+
+    plt.xlabel('Mass [GeV]')
+#    plt.xscale('log')
+    plt.yscale('log')
+    xmin, xmax = plt.gca().get_xlim()
+    ticks = np.arange(xmin, xmax, (xmax-xmin)/10)
+    tick_labels = [f"{tick:.2f}" for tick in ticks]
+    plt.xticks(ticks, tick_labels)
+    plt.legend()
+    plt.grid(True)
+    plt.show()
+
+
+# Create a mass vs coupling plot, defining the contour shading the region where we could detect the decays 
+def grid_2D_mass_coupling(sample_sums_total, sample_sums_remaining, cross_means_dict, process):
+    sums_total = {group: total_nevents_sum for group, total_nevents_sum in sample_sums_total.items() if group[2] == process}
+    sums_remaining = {group: remaining_nevents_sum for group, remaining_nevents_sum in sample_sums_remaining.items() if group[2] == process}
+    crosssecs = {group: crosssec for group, crosssec in cross_means_dict.items() if group[2] == process}
+    masses = [group[0] for group in sums_total.keys()] # group[1] is mass
+    couplings = [group[1] for group in sums_total.keys()]
+
+    for group, group_df in grouped:
+        print(f"Group: Mass = {group[0]}, Coupling = {group[1]}, Process = {group[2]}")
+        print("Cross values:")
+        print(group_df['cross'].values)  # Print all 'cross' values for this group
+        mean_cross = group_df['cross'].mean()
+        print(f"Mean of cross values: {mean_cross}")
+        print("Grouped indices (SampleYs): ")
+        print(group_df.index.values)
+        print()
+
+    print("Masses : ")
+    print(masses)
+    print("with unique instances ", len(set(masses)))
+    print("Couplings : ")
+    print(couplings)
+    print("with unique instances ", len(set(couplings)))    
+
+    plot_avgdecpos(avgdecpos, process, masses, couplings)
+    
+    mass_grid, coupling_grid = np.meshgrid(masses, couplings) 
+
+    # Calculate the edges for mass_grid for plotting with pcolormesh 
+    mass_diff = np.diff(mass_grid, axis=1) / 2
+    mass_edges = np.hstack([mass_grid[:, :1] - mass_diff[:, :1], mass_grid[:, :-1] + mass_diff])
+
+    coupling_sq_grid = coupling_grid**2
+    coupling_diff = np.diff(coupling_sq_grid, axis=0) / 2
+    coupling_sq_diff = np.diff(coupling_sq_grid, axis=0) / 2
+    coupling_edges = np.vstack([coupling_grid[:1, :] - coupling_diff[:1, :], coupling_grid[:-1, :] + coupling_diff])
+    coupling_sq_edges = np.vstack([coupling_sq_grid[:1, :] - coupling_sq_diff[:1, :], coupling_sq_grid[:-1, :] + coupling_sq_diff])
+
+#    mass_edges = np.pad(mass_grid, ((0, 0), (0, 1)), mode='edge')[:-1, :] + np.diff(mass_grid, axis=1) / 2
+#    coupling_sq_edges = np.pad(coupling_sq_grid, ((0, 1), (0, 0)), mode='edge')[:, :-1] + np.diff(coupling_sq_grid, axis=0) / 2
+
+    # Initialise result grid
+    min_br_grid = np.zeros_like(mass_grid)
+    eff_grid = np.zeros_like(mass_grid)
+    zeros_grid = np.zeros_like(mass_grid)
+    epsilon = 1e-9 # for floating point precision
+    # Fill grids
+    for i in range(mass_grid.shape[0]):  
+        for j in range(mass_grid.shape[1]):  
+            # Initialize efficiency 
+            efficiency = None
+            this_mass = mass_grid[i,j]
+            this_coupling = coupling_grid[i,j]
+
+            # Iterate over sums_remaining and sums_total
+            for group, Nremain in sums_remaining.items():
+                Ntot = sums_total.get(group, 0)  # Get the total from sums_total, default to 0 if group doesn't exist
+                if group[0] == this_mass and group[1] == this_coupling:
+                    if Ntot > 0:  # Avoid division by zero
+                        efficiency = Nremain / Ntot
+                    else:
+                        efficiency = 0  
+                    break  # Exit loop once we've found the matching group              
+            print("eff: ", efficiency)
+            eff_grid[i,j] = efficiency
+            if efficiency == None:
+                zeros_grid[i,j] = 1
+            elif abs(efficiency) < epsilon:
+                zeros_grid[i,j] = 1
+            else:
+                zeros_grid[i,j] = 0
+######### This part works but commenting out because time to run is long 
+#            this_cross = None
+#            for group, cross in crosssecs.items():
+#                if group[0] == this_mass and group[1] == this_coupling:
+#                    this_cross = crosssecs.get(group, 0)
+#            print("Cross: ", this_cross)
+#            BR_min = None
+#            if this_cross != 0.0 and efficiency != 0.0:
+#                BR_min = n_llp_target_nobkg / (this_cross * lumi * efficiency)
+#            else:
+#                BR_min = 0.0
+#            print("BR min: ", BR_min)
+#            min_br_grid[i,j] = BR_min
+############
+
+#    plt.figure(figsize=(8,6))
+#    plt.pcolormesh(mass_grid, coupling_sq_grid, min_br_grid, cmap='viridis', shading='auto')
+#    plt.colorbar(label="BR min obs")
+#    plt.xlabel('Mass [GeV]')
+#    plt.ylabel('Coupling squared |VeN1|^2')
+#    plt.ylim(1e-7,1e1)
+#    plt.yscale('log')
+#    plt.title(f'Minimum BR required for observation, process = {process}')
+
+#################
+#    plt.figure(figsize=(8,6))
+#    plt.contourf(mass_grid, coupling_sq_grid, min_br_grid, levels=50, cmap='viridis')
+#    plt.colorbar(label="BR min obs")
+#    plt.xlabel('Mass [GeV]')
+#    plt.ylabel('Coupling squared $|VeN1|^2$')
+#    plt.yscale('log')
+#    plt.title(f'Minimum BR required for observation, process = {process}')
+###############
+
+    plt.figure(figsize=(8,6))
+    #    plt.contourf(mass_grid, coupling_sq_grid, eff_grid, levels=50, cmap='viridis')
+#    mass_edges = np.concatenate([mass_grid - np.diff(mass_grid, prepend=mass_grid[0]) / 2, [mass_grid[-1] + (mass_grid[-1] - mass_grid[-2]) / 2]])
+#    coupling_sq_edges = np.concatenate([coupling_sq_grid - np.diff(coupling_sq_grid, prepend=coupling_sq_grid[0]) / 2, [coupling_sq_grid[-1] + (coupling_sq_grid[-1] - coupling_sq_grid[-2]) / 2]])
+    mesh = plt.pcolormesh(mass_edges, coupling_edges, eff_grid, shading='auto', cmap='cividis')#'terrain')#'plasma')#'viridis')
+    plt.ylim([min(couplings), max(couplings)])
+    plt.xlim([min(masses), max(masses)])
+    plt.colorbar(mesh, label="efficiency")
+    plt.xlabel('Mass [GeV]')
+#    plt.ylabel('Coupling squared $|VeN1|^2$')
+    plt.ylabel('Coupling VeN1')
+    plt.yscale('log')
+    plt.title(f'Selection efficiency, process = {process}')
+
+    plt.figure(figsize=(8,6))
+    mesh = plt.pcolormesh(mass_edges, coupling_edges, zeros_grid, shading='auto', cmap='plasma')#'terrain')#'plasma')#'viridis') # cividis
+    plt.ylim([min(couplings), max(couplings)])
+    plt.xlim([min(masses), max(masses)])
+    plt.colorbar(mesh, label="Zero efficiency")
+    plt.xlabel('Mass [GeV]')
+#    plt.ylabel('Coupling squared $|VeN1|^2$')
+    plt.ylabel('Coupling VeN1')
+    plt.yscale('log')
+    plt.title(f'Points yielding zero selection efficiency, process = {process}')
+
+    plt.show()
+
+#    threshold = # minimum BR we are sensitive to (BR for 4 evts) 
+#    highlight_region = rem_evt_grid > threshold 
+
+#grid_2D_mass_coupling(sample_sums_total, sample_sums_remaining, cross_means_dict, "CCDY_eev")
+
+#plot_BR_mass(fixed_coupling_value, processes)
+plot_BR_mass([0.01,0.001], ["CCDY_qqe"])#,"CCDY_qqe","CCDY_eev"])
+#plot_BR_mass([0.01], processes)
+
+#plot_BR_coupling(fixed_mass_value, processes)
+#plot_BR_coupling(0.7, processes)
+#plot_BR_coupling(1.8, processes)
+plot_BR_coupling(0.3, ["CCDY_qqe"]) 
+#plot_BR_coupling(0.5, "CCDY_qqe") 
+
+plotstyle_dict = {"CCDY_qqe": {'line':'dotted','colour':'orange'}, "CCDY_eev": {'line':'solid','colour':'orange'}, "CCDY_qqv": {'line':'dashed', 'colour':'orange'},
+                  "NCDY_qqe": {'line':'dotted','colour':'blue'}, "NCDY_eev": {'line':'solid','colour':'blue'}, "NCDY_qqv": {'line':'dashed', 'colour':'blue'},
+                  "Wa_qqe": {'line':'dotted','colour':'green'}, "Wa_eev": {'line':'solid','colour':'green'}, "Wa_qqv": {'line':'dashed', 'colour':'green'},
+                  "ggF_qqe": {'line':'dotted','colour':'red'}, "ggF_eev": {'line':'solid','colour':'red'}, "ggF_qqv": {'line':'dashed', 'colour':'red'}
+                  }
+
+

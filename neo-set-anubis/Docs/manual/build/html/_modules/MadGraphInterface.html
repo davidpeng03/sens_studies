@@ -1,0 +1,276 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MadGraphInterface &mdash; Neo-Set-Anubis 1.0.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=c682d59b" />
+      <link rel="stylesheet" type="text/css" href="../_static/bullets.css" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=8d563738"></script>
+      <script src="../_static/doctools.js?v=888ff710"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            Neo-Set-Anubis
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../ReleaseUpdate.html">What’s New</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../Installation.html">Installation and Deployment</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../BranchingRatioCalculation.html">Branching Ratio Calculation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../PythiaConf.html">Pythia Simulation Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../PythiaEventGenerator.html">Pythia Event Generator</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Neo-Set-Anubis</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="index.html">Module code</a></li>
+      <li class="breadcrumb-item active">MadGraphInterface</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for MadGraphInterface</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">subprocess</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">docker</span>
+<span class="kn">import</span> <span class="nn">shutil</span>
+<span class="kn">from</span> <span class="nn">db.ConfigurationFile</span> <span class="kn">import</span> <span class="n">JobScript</span><span class="p">,</span> <span class="n">ParamCard</span><span class="p">,</span> <span class="n">MadSpinCard</span><span class="p">,</span> <span class="n">RunCard</span><span class="p">,</span> <span class="n">PythiaCard</span>
+<span class="kn">from</span> <span class="nn">db.MadGraphFileManager</span> <span class="kn">import</span> <span class="n">MadGraphFileManager</span>
+
+<span class="n">DOCKER_IMAGE</span> <span class="o">=</span> <span class="s2">&quot;ryudoro/madgraph-anubis&quot;</span>
+<span class="n">CONTAINER_NAME</span> <span class="o">=</span> <span class="s2">&quot;madgraph-anubis&quot;</span>
+<span class="n">HOST_FOLDER</span> <span class="o">=</span> <span class="s2">&quot;db/Template/madgraph&quot;</span>
+<span class="n">CONTAINER_FOLDER</span> <span class="o">=</span> <span class="s2">&quot;/External_Integration/input_files/&quot;</span>
+<span class="n">MADGRAPH_SCRIPT</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">CONTAINER_FOLDER</span><span class="si">}</span><span class="s2">jobscript_param_scan.txt&quot;</span>
+
+<div class="viewcode-block" id="MadGraphInterface">
+<a class="viewcode-back" href="../MadGraphInterface.html#MadGraphInterface.MadGraphInterface">[docs]</a>
+<span class="k">class</span> <span class="nc">MadGraphInterface</span><span class="p">:</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mg_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">file_manager</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Principal class for dealing with MadGraph interface</span>
+<span class="sd">        :param mg_path: Path to MadGraph executable</span>
+<span class="sd">        :param file_manager: Instance of file manager to handle files.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mg_path</span> <span class="o">=</span> <span class="n">mg_path</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">file_manager</span> <span class="o">=</span> <span class="n">file_manager</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">config_files</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">docker_client</span> <span class="o">=</span> <span class="n">docker</span><span class="o">.</span><span class="n">from_env</span><span class="p">()</span>
+
+<div class="viewcode-block" id="MadGraphInterface.add_config_file">
+<a class="viewcode-back" href="../MadGraphInterface.html#MadGraphInterface.MadGraphInterface.add_config_file">[docs]</a>
+    <span class="k">def</span> <span class="nf">add_config_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config_file</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Add a configuration file to the list.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">config_files</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">config_file</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="MadGraphInterface.generate_files">
+<a class="viewcode-back" href="../MadGraphInterface.html#MadGraphInterface.MadGraphInterface.generate_files">[docs]</a>
+    <span class="k">def</span> <span class="nf">generate_files</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Generate configuration files.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">config</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">config_files</span><span class="p">:</span>
+            <span class="n">config</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">file_manager</span><span class="o">.</span><span class="n">output_dir</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="MadGraphInterface.validate_files">
+<a class="viewcode-back" href="../MadGraphInterface.html#MadGraphInterface.MadGraphInterface.validate_files">[docs]</a>
+    <span class="k">def</span> <span class="nf">validate_files</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Validate that necessary files exist before running.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">required_files</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">config_files</span><span class="p">:</span>
+            <span class="k">if</span> <span class="s2">&quot;jobscript&quot;</span> <span class="ow">in</span> <span class="n">file</span><span class="o">.</span><span class="n">filename</span><span class="p">:</span>
+                <span class="n">required_files</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">file_manager</span><span class="o">.</span><span class="n">output_dir</span><span class="p">,</span> <span class="n">file</span><span class="o">.</span><span class="n">filename</span><span class="p">))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">required_files</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">file_manager</span><span class="o">.</span><span class="n">output_dir</span><span class="p">,</span> <span class="s2">&quot;HNL_Cards&quot;</span><span class="p">,</span> <span class="n">file</span><span class="o">.</span><span class="n">filename</span><span class="p">))</span>
+
+        <span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">required_files</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">file</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">FileNotFoundError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Required file not found: </span><span class="si">{</span><span class="n">file</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="MadGraphInterface.run_with_docker">
+<a class="viewcode-back" href="../MadGraphInterface.html#MadGraphInterface.MadGraphInterface.run_with_docker">[docs]</a>
+    <span class="k">def</span> <span class="nf">run_with_docker</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Run MadGraph using Docker.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Checking if Docker image is available...&quot;</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">docker_client</span><span class="o">.</span><span class="n">images</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">DOCKER_IMAGE</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Docker image </span><span class="si">{</span><span class="n">DOCKER_IMAGE</span><span class="si">}</span><span class="s2"> is available.&quot;</span><span class="p">)</span>
+        <span class="k">except</span> <span class="n">docker</span><span class="o">.</span><span class="n">errors</span><span class="o">.</span><span class="n">ImageNotFound</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Docker image </span><span class="si">{</span><span class="n">DOCKER_IMAGE</span><span class="si">}</span><span class="s2"> not found. Pulling...&quot;</span><span class="p">)</span>
+            <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">([</span><span class="s2">&quot;docker&quot;</span><span class="p">,</span> <span class="s2">&quot;pull&quot;</span><span class="p">,</span> <span class="n">DOCKER_IMAGE</span><span class="p">],</span> <span class="n">check</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Ensuring container is running...&quot;</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">container</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">docker_client</span><span class="o">.</span><span class="n">containers</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">CONTAINER_NAME</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">container</span><span class="o">.</span><span class="n">status</span> <span class="o">!=</span> <span class="s2">&quot;running&quot;</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Container </span><span class="si">{</span><span class="n">CONTAINER_NAME</span><span class="si">}</span><span class="s2"> exists but is not running. Starting...&quot;</span><span class="p">)</span>
+                <span class="n">container</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+        <span class="k">except</span> <span class="n">docker</span><span class="o">.</span><span class="n">errors</span><span class="o">.</span><span class="n">NotFound</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Container </span><span class="si">{</span><span class="n">CONTAINER_NAME</span><span class="si">}</span><span class="s2"> not found. Creating and starting...&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">docker_client</span><span class="o">.</span><span class="n">containers</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
+                <span class="n">DOCKER_IMAGE</span><span class="p">,</span>
+                <span class="n">name</span><span class="o">=</span><span class="n">CONTAINER_NAME</span><span class="p">,</span>
+                <span class="n">detach</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="n">tty</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="n">volumes</span><span class="o">=</span><span class="p">{</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">HOST_FOLDER</span><span class="p">):</span> <span class="p">{</span><span class="s2">&quot;bind&quot;</span><span class="p">:</span> <span class="n">CONTAINER_FOLDER</span><span class="p">,</span> <span class="s2">&quot;mode&quot;</span><span class="p">:</span> <span class="s2">&quot;rw&quot;</span><span class="p">}},</span>
+                <span class="n">entrypoint</span><span class="o">=</span><span class="s2">&quot;/bin/bash&quot;</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Container </span><span class="si">{</span><span class="n">CONTAINER_NAME</span><span class="si">}</span><span class="s2"> started.&quot;</span><span class="p">)</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Copying files to the container...&quot;</span><span class="p">)</span>
+        <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">([</span><span class="s2">&quot;docker&quot;</span><span class="p">,</span> <span class="s2">&quot;cp&quot;</span><span class="p">,</span> <span class="n">HOST_FOLDER</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">CONTAINER_NAME</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">CONTAINER_FOLDER</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">],</span> <span class="n">check</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Running MadGraph inside Docker container...&quot;</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">([</span>
+                <span class="s2">&quot;docker&quot;</span><span class="p">,</span> <span class="s2">&quot;exec&quot;</span><span class="p">,</span> <span class="n">CONTAINER_NAME</span><span class="p">,</span> <span class="s2">&quot;bash&quot;</span><span class="p">,</span> <span class="s2">&quot;-c&quot;</span><span class="p">,</span>
+                <span class="sa">f</span><span class="s2">&quot;cd /External_Integration/MG5_aMC &amp;&amp; ./bin/mg5_aMC </span><span class="si">{</span><span class="n">MADGRAPH_SCRIPT</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">],</span> <span class="n">check</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;MadGraph execution completed successfully.&quot;</span><span class="p">)</span>
+        <span class="k">except</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">CalledProcessError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error during MadGraph execution: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">raise</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">retrieve_events</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="MadGraphInterface.retrieve_events">
+<a class="viewcode-back" href="../MadGraphInterface.html#MadGraphInterface.MadGraphInterface.retrieve_events">[docs]</a>
+    <span class="k">def</span> <span class="nf">retrieve_events</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Retrieve the generated Events folder from the Docker container</span>
+<span class="sd">        and save it to the local output directory.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">container_events_path</span> <span class="o">=</span> <span class="s2">&quot;/External_Integration/MG5_aMC/HNL_Condor_CCDY_qqe/Events&quot;</span>
+        <span class="n">local_events_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">file_manager</span><span class="o">.</span><span class="n">output_dir</span><span class="p">,</span> <span class="s2">&quot;Events&quot;</span><span class="p">)</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Checking if container </span><span class="si">{</span><span class="n">CONTAINER_NAME</span><span class="si">}</span><span class="s2"> is running...&quot;</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">container</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">docker_client</span><span class="o">.</span><span class="n">containers</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">CONTAINER_NAME</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">container</span><span class="o">.</span><span class="n">status</span> <span class="o">!=</span> <span class="s2">&quot;running&quot;</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error: Container </span><span class="si">{</span><span class="n">CONTAINER_NAME</span><span class="si">}</span><span class="s2"> is not running.&quot;</span><span class="p">)</span>
+                <span class="k">return</span>
+
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Copying Events directory from the container...&quot;</span><span class="p">)</span>
+            <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">([</span>
+                <span class="s2">&quot;docker&quot;</span><span class="p">,</span> <span class="s2">&quot;cp&quot;</span><span class="p">,</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">CONTAINER_NAME</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">container_events_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                <span class="n">local_events_path</span>
+            <span class="p">],</span> <span class="n">check</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Events directory successfully copied to </span><span class="si">{</span><span class="n">local_events_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">except</span> <span class="n">docker</span><span class="o">.</span><span class="n">errors</span><span class="o">.</span><span class="n">NotFound</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error: Container </span><span class="si">{</span><span class="n">CONTAINER_NAME</span><span class="si">}</span><span class="s2"> not found.&quot;</span><span class="p">)</span>
+        <span class="k">except</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">CalledProcessError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error copying Events folder: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+</div>
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="n">file_manager</span> <span class="o">=</span> <span class="n">MadGraphFileManager</span><span class="p">(</span>
+        <span class="n">template_dir</span><span class="o">=</span><span class="s1">&#39;db/Template/madgraph&#39;</span><span class="p">,</span> 
+        <span class="n">output_dir</span><span class="o">=</span><span class="s1">&#39;db/Temp/madgraph&#39;</span>
+    <span class="p">)</span>
+    
+    <span class="n">mg_interface</span> <span class="o">=</span> <span class="n">MadGraphInterface</span><span class="p">(</span>
+        <span class="n">mg_path</span><span class="o">=</span><span class="s1">&#39;External_Integration/MadGraph/MG5_aMC_v2_9_20&#39;</span><span class="p">,</span> 
+        <span class="n">file_manager</span><span class="o">=</span><span class="n">file_manager</span>
+    <span class="p">)</span>
+    
+    <span class="n">jobscript</span> <span class="o">=</span> <span class="n">JobScript</span><span class="p">()</span>
+    <span class="n">jobscript</span><span class="o">.</span><span class="n">set_option</span><span class="p">(</span><span class="s1">&#39;model&#39;</span><span class="p">,</span> <span class="s1">&#39;SM_HeavyN_CKM_AllMasses_LO&#39;</span><span class="p">)</span>
+    <span class="n">jobscript</span><span class="o">.</span><span class="n">set_scan_parameter</span><span class="p">(</span><span class="s1">&#39;VeN1&#39;</span><span class="p">,</span> <span class="p">[</span><span class="mf">1.0</span><span class="p">])</span>
+    <span class="n">jobscript</span><span class="o">.</span><span class="n">set_scan_parameter</span><span class="p">(</span><span class="s1">&#39;MN1&#39;</span><span class="p">,</span> <span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+    <span class="n">jobscript</span><span class="o">.</span><span class="n">add_process</span><span class="p">(</span><span class="s1">&#39;p p &gt; n1 ell # [QCD]&#39;</span><span class="p">)</span>
+    <span class="n">jobscript</span><span class="o">.</span><span class="n">update_paths</span><span class="p">(</span><span class="n">file_manager</span><span class="o">.</span><span class="n">output_dir</span><span class="p">)</span>
+    <span class="n">mg_interface</span><span class="o">.</span><span class="n">add_config_file</span><span class="p">(</span><span class="n">jobscript</span><span class="p">)</span>
+    
+    <span class="n">mg_interface</span><span class="o">.</span><span class="n">add_config_file</span><span class="p">(</span><span class="n">MadSpinCard</span><span class="p">())</span>
+    <span class="n">mg_interface</span><span class="o">.</span><span class="n">add_config_file</span><span class="p">(</span><span class="n">RunCard</span><span class="p">())</span>
+    <span class="n">mg_interface</span><span class="o">.</span><span class="n">add_config_file</span><span class="p">(</span><span class="n">ParamCard</span><span class="p">())</span>
+    <span class="n">mg_interface</span><span class="o">.</span><span class="n">add_config_file</span><span class="p">(</span><span class="n">PythiaCard</span><span class="p">())</span>
+    
+    <span class="n">mg_interface</span><span class="o">.</span><span class="n">generate_files</span><span class="p">()</span>
+    <span class="n">mg_interface</span><span class="o">.</span><span class="n">validate_files</span><span class="p">()</span>
+    <span class="n">mg_interface</span><span class="o">.</span><span class="n">run_with_docker</span><span class="p">()</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Paul Nathaniel Swallow, Théo Reymermier, Anna Jane Mullin, Sofie Nordahl Erner.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

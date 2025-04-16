@@ -1,0 +1,271 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Branching Ratio Calculation &mdash; Neo-Set-Anubis 1.0.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b76e3c8a" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=c682d59b" />
+      <link rel="stylesheet" type="text/css" href="_static/bullets.css" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=8d563738"></script>
+      <script src="_static/doctools.js?v=9a2dae69"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Pythia Simulation Interface" href="PythiaConf.html" />
+    <link rel="prev" title="Installation and Deployment" href="Installation.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            Neo-Set-Anubis
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="ReleaseUpdate.html">What’s New</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Installation.html">Installation and Deployment</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Branching Ratio Calculation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#command-line-arguments">Command-Line Arguments</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#setting-up-the-br-interface">Setting up the BR Interface</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#choosing-a-calculation-method">Choosing a Calculation Method</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#defining-the-model">Defining the Model</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#setting-parameters-and-masses">Setting Parameters and Masses</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#performing-branching-ratio-calculations">Performing Branching Ratio Calculations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#error-handling-and-customization">Error Handling and Customization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#conclusion">Conclusion</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="PythiaConf.html">Pythia Simulation Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="PythiaEventGenerator.html">Pythia Event Generator</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Neo-Set-Anubis</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Branching Ratio Calculation</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/BranchingRatioCalculation.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="branching-ratio-calculation">
+<span id="brcalculator"></span><h1>Branching Ratio Calculation<a class="headerlink" href="#branching-ratio-calculation" title="Link to this heading"></a></h1>
+<p>The Branching Ratio (BR) calculation is a crucial part of determining the phenomenology of long-lived particles (LLP). This manual explains how to use the BR calculation interface, allowing you to compute different types of branching ratios for any model that has UFO as input.</p>
+<p>The BR interface supports two main types of calculations for LLPs:</p>
+<ul class="simple">
+<li><p><strong>Production BR</strong>: This is the branching ratio corresponding to the production of a given particle from a decaying mother particle.</p></li>
+<li><p><strong>Decay BR</strong>: This refers to the branching ratio for the decay of the particle into specific final states.</p></li>
+</ul>
+<p>Both types of branching ratios can be calculated using Python-based functions. The interface is designed to allow flexibility in the methods used for the computation, with options for pure Python calculations or input-output files to handle large data sets or precomputed results.</p>
+<section id="command-line-arguments">
+<h2>Command-Line Arguments<a class="headerlink" href="#command-line-arguments" title="Link to this heading"></a></h2>
+<p>This interface provides several command-line arguments for flexible configuration. These options allow users to specify the particle type, mass, couplings, and other settings related to the calculation.</p>
+<p>Here is a breakdown of the available arguments:</p>
+<blockquote>
+<div><dl class="simple">
+<dt>BR_calculator.py [-h] [–method METHOD] [–prod_file] [–decay_file]</dt><dd><p>–model MODEL –calc_type {DecayTot,BR,ProdBR}
+–particle {N1,A}
+[–decay_channel DECAY_CHANNEL [DECAY_CHANNEL …]]
+[–mother_particle MOTHER_PARTICLE]</p>
+</dd>
+</dl>
+</div></blockquote>
+<p><em>arguments</em>:</p>
+<blockquote>
+<div><dl class="option-list">
+<dt><kbd><span class="option">-h</span>, <span class="option">--help</span></kbd></dt>
+<dd><p>show this help message and exit</p>
+</dd>
+</dl>
+<p class="attribution">—method METHOD       Calculation method to use (Python or File)</p>
+</div></blockquote>
+<blockquote>
+<div><dl class="option-list">
+<dt><kbd><span class="option">--prod_file</span></kbd></dt>
+<dd><p>Use precomputed production BR from file</p>
+</dd>
+</dl>
+<p class="attribution">—decay_file          Use precomputed decay BR from file</p>
+</div></blockquote>
+<blockquote>
+<div><dl class="option-list">
+<dt><kbd><span class="option">--model <var>MODEL</var></span></kbd></dt>
+<dd><p>The model name to use (e.g., HNL)</p>
+</dd>
+</dl>
+<p class="attribution">—calc_type {DecayTot,BR,ProdBR}</p>
+</div></blockquote>
+<blockquote>
+<div><blockquote>
+<div><p>Type of calculation (DecayTot, BR, or ProdBR)</p>
+</div></blockquote>
+<p class="attribution">—particle {N1,A}     Particle to be consider</p>
+</div></blockquote>
+<blockquote>
+<div><dl class="option-list">
+<dt><kbd><span class="option">--decay_channel <var>DECAY_CHANNEL</var></span></kbd></dt>
+<dd><p>Decay channel for BR (e.g., 211 13 for pion and muon)</p>
+</dd>
+</dl>
+<p class="attribution">—mother_particle MOTHER_PARTICLE</p>
+</div></blockquote>
+<blockquote>
+<div><blockquote>
+<div><p>Mother particle ID for ProdBR (e.g., 24 for W boson)</p>
+</div></blockquote>
+</div></blockquote>
+<p>### Example Usage:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>Pipeline/BR_calculator.py<span class="w"> </span>--model<span class="w"> </span>HNL<span class="w"> </span>--params<span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="m">1</span><span class="w"> </span>--mass<span class="w"> </span><span class="m">1</span><span class="w"> </span>--calc_type<span class="w"> </span>DecayTot
+</pre></div>
+</div>
+</section>
+<section id="setting-up-the-br-interface">
+<h2>Setting up the BR Interface<a class="headerlink" href="#setting-up-the-br-interface" title="Link to this heading"></a></h2>
+<p>To use the interface, first instantiate the <cite>BRInterface</cite> class:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">testbr</span> <span class="o">=</span> <span class="n">BRInterface</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>Once initialized, the interface requires you to set a calculation method and a model before performing any computations.</p>
+</section>
+<section id="choosing-a-calculation-method">
+<h2>Choosing a Calculation Method<a class="headerlink" href="#choosing-a-calculation-method" title="Link to this heading"></a></h2>
+<p>The interface supports two calculation strategies:</p>
+<ul class="simple">
+<li><p><strong>Python-based calculations</strong>: This is the recommended method for flexibility and custom analysis.</p></li>
+<li><p><strong>File-based calculations</strong>: For situations where results have already been precomputed and stored in files.</p></li>
+</ul>
+<p>To select a calculation method, use:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">testbr</span><span class="o">.</span><span class="n">set_calculation_method</span><span class="p">(</span><span class="n">method_name</span><span class="p">,</span> <span class="n">pythoncalculation_prod_in_file</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">pythoncalculation_decay_in_file</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Here, <cite>method_name</cite> can be either <cite>“Python”</cite> or <cite>“File”</cite>. If using Python-based calculations, you can further customize whether the production or decay BR computations should rely on precomputed data files using the <cite>pythoncalculation_prod_in_file</cite> and <cite>pythoncalculation_decay_in_file</cite> flags.</p>
+<p>For example:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">testbr</span><span class="o">.</span><span class="n">set_calculation_method</span><span class="p">(</span><span class="s2">&quot;Python&quot;</span><span class="p">,</span> <span class="n">pythoncalculation_prod_in_file</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">pythoncalculation_decay_in_file</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="defining-the-model">
+<h2>Defining the Model<a class="headerlink" href="#defining-the-model" title="Link to this heading"></a></h2>
+<p>Next, set the model you wish to use for your calculations. Models should be specified by their name as a string, corresponding to the UFO input you have prepared.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">testbr</span><span class="o">.</span><span class="n">set_model</span><span class="p">(</span><span class="s2">&quot;HNL&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>In this example, the model is set to <cite>“HNL”</cite> for heavy neutral leptons.</p>
+</section>
+<section id="setting-parameters-and-masses">
+<h2>Setting Parameters and Masses<a class="headerlink" href="#setting-parameters-and-masses" title="Link to this heading"></a></h2>
+<p>Once the model is set, you must define the parameters and masses relevant to your computation. Parameters are typically coupling constants, mixing angles, or other model-specific values. They can be passed as a dictionary:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">testbr</span><span class="o">.</span><span class="n">set_params</span><span class="p">({</span><span class="s2">&quot;Ve&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;Vmu&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;Vta&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">})</span>
+</pre></div>
+</div>
+<p>Masses for the particles in your model should also be provided as a dictionary:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">testbr</span><span class="o">.</span><span class="n">set_masses</span><span class="p">({</span><span class="s2">&quot;N1&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">})</span>
+</pre></div>
+</div>
+<p>This example sets the mass of particle <cite>N1</cite> to 1 GeV.</p>
+</section>
+<section id="performing-branching-ratio-calculations">
+<h2>Performing Branching Ratio Calculations<a class="headerlink" href="#performing-branching-ratio-calculations" title="Link to this heading"></a></h2>
+<p>With the calculation method, model, parameters, and masses set, you can now compute the branching ratios.</p>
+<p>### Decay Total Calculation</p>
+<p>To calculate the total decay width (<cite>DecayTot</cite>) of a particle, use the following command:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">testbr</span><span class="o">.</span><span class="n">calculate</span><span class="p">(</span><span class="s2">&quot;DecayTot&quot;</span><span class="p">,</span> <span class="s2">&quot;N1&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Here, <cite>“DecayTot”</cite> indicates the type of calculation, and <cite>“N1”</cite> is the particle for which the decay width is being computed.</p>
+<p>### Decay Branching Ratio</p>
+<p>To compute the branching ratio for a specific decay channel, you can use:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">testbr</span><span class="o">.</span><span class="n">calculate</span><span class="p">(</span><span class="s2">&quot;BR&quot;</span><span class="p">,</span> <span class="s2">&quot;N1&quot;</span><span class="p">,</span> <span class="n">channel</span><span class="o">=</span><span class="p">(</span><span class="mi">211</span><span class="p">,</span> <span class="mi">13</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>In this example, the decay branching ratio of particle <cite>N1</cite> into a pion (<cite>211</cite>) and a muon (<cite>13</cite>) is calculated. The <cite>channel</cite> argument specifies the final state particles.</p>
+<p>### Production Branching Ratio</p>
+<p>To compute the production branching ratio from a mother particle, use the <cite>ProdBR</cite> calculation:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">testbr</span><span class="o">.</span><span class="n">calculate</span><span class="p">(</span><span class="s2">&quot;ProdBR&quot;</span><span class="p">,</span> <span class="s2">&quot;N1&quot;</span><span class="p">,</span> <span class="n">mother_particle</span><span class="o">=</span><span class="mi">24</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>This computes the branching ratio for producing <cite>N1</cite> from the decay of the W boson (<cite>24</cite>).</p>
+</section>
+<section id="error-handling-and-customization">
+<h2>Error Handling and Customization<a class="headerlink" href="#error-handling-and-customization" title="Link to this heading"></a></h2>
+<p>The interface is designed to handle invalid inputs and calculations gracefully. If you attempt to perform a calculation without setting a model or calculation method, an appropriate error will be raised. Additionally, you can adjust individual parameters using:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">testbr</span><span class="o">.</span><span class="n">set_one_param</span><span class="p">(</span><span class="s2">&quot;Ve&quot;</span><span class="p">,</span> <span class="mf">0.8</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>This will update the parameter <cite>“Ve”</cite> to <cite>0.8</cite> while leaving other parameters unchanged.</p>
+</section>
+<section id="conclusion">
+<h2>Conclusion<a class="headerlink" href="#conclusion" title="Link to this heading"></a></h2>
+<p>The <cite>BRInterface</cite> class provides a flexible and customizable way to compute branching ratios for various models. By offering different strategies for performing the calculations and allowing for detailed control over input parameters, this interface is a powerful tool for LLP studies.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="Installation.html" class="btn btn-neutral float-left" title="Installation and Deployment" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="PythiaConf.html" class="btn btn-neutral float-right" title="Pythia Simulation Interface" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Paul Nathaniel Swallow, Théo Reymermier, Anna Jane Mullin, Sofie Nordahl Erner.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

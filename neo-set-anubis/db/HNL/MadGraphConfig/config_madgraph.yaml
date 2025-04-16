@@ -1,0 +1,19 @@
+SS_path: "Temp/SimulationSwarms"
+
+h5_path: "Temp/h5_files"
+
+scanfile: "samples_to_process.csv"
+
+llp_id: 9900012
+llp_type: hnl
+nevents: 2000
+minJetPt: 10.0
+minChargedPt: 0.5
+
+minTheta: 0.828849
+maxTheta: 1.51461
+
+# output_dir: "/path/to/output/directory"
+# log_level: "INFO"
+
+# sample_file_template: "{llp_type}_{prod_decay}_mn1_{llp_mass}_ven1_{llp_Ve}_sample{SampleY}.h5"

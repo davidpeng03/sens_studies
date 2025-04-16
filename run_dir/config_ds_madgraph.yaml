@@ -1,0 +1,13 @@
+llp_id: 35
+llp_type: hs
+SS_path: "/usera/dp728/simulations/"
+h5_path: "/usera/dp728/h5_files/"
+js_path: "/usera/dp728/MG5_aMC_v3_5_4_pswallow/"
+scanfile: "/usera/dp728/run_dir/samples_to_processDS.csv"
+cuts_dicts_path: "/usera/dp728/outputs/"
+minChargedPt: 0.5 
+minJetPt: 10.0 
+nevents: 1000
+minTheta: 0.828849
+maxTheta: 1.51461
+HNLCalc_file: "/usera/amullin/Documents/ANUBIS/acceptance_results/HNLCalc-main/HNLCalc_ctau_table.csv"

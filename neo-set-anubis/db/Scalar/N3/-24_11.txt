@@ -1,0 +1,1 @@
+(((ee**2*Me**2*VeN3**2)/(2.*sw**2) + (ee**2*mN3**2*VeN3**2)/(2.*sw**2) + (ee**2*Me**4*VeN3**2)/(2.*MW**2*sw**2) - (ee**2*Me**2*mN3**2*VeN3**2)/(MW**2*sw**2) + (ee**2*mN3**4*VeN3**2)/(2.*MW**2*sw**2) - (ee**2*MW**2*VeN3**2)/sw**2)*cmath.sqrt(Me**4 - 2*Me**2*mN3**2 + mN3**4 - 2*Me**2*MW**2 - 2*mN3**2*MW**2 + MW**4))/(32.*cmath.pi*abs(mN3)**3)

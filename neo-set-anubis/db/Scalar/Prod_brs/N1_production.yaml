@@ -1,0 +1,138 @@
+channels:
+- coupling: 1
+  decay: W__minus__
+  id: 11
+  idhadron: 24
+  idlepton: null
+- coupling: 1
+  decay: ve__tilde__
+  id: 25
+  idhadron: -12
+  idlepton: null
+- coupling: 1
+  decay: vm__tilde__
+  id: 25
+  idhadron: -14
+  idlepton: null
+- coupling: 1
+  decay: vt__tilde__
+  id: 25
+  idhadron: -16
+  idlepton: null
+- coupling: 1
+  decay: ve
+  id: 25
+  idhadron: 12
+  idlepton: null
+- coupling: 1
+  decay: vm
+  id: 25
+  idhadron: 14
+  idlepton: null
+- coupling: 1
+  decay: vt
+  id: 25
+  idhadron: 16
+  idlepton: null
+- coupling: 1
+  decay: W__minus__
+  id: 13
+  idhadron: 24
+  idlepton: null
+- coupling: 1
+  decay: W__minus__
+  id: 15
+  idhadron: 24
+  idlepton: null
+- coupling: 1
+  decay: e__plus__
+  id: -24
+  idhadron: null
+  idlepton: -11
+- coupling: 1
+  decay: mu__plus__
+  id: -24
+  idhadron: null
+  idlepton: -13
+- coupling: 1
+  decay: ta__plus__
+  id: -24
+  idhadron: null
+  idlepton: -15
+- coupling: 1
+  decay: ve__tilde__
+  id: 23
+  idhadron: -12
+  idlepton: null
+- coupling: 1
+  decay: vm__tilde__
+  id: 23
+  idhadron: -14
+  idlepton: null
+- coupling: 1
+  decay: vt__tilde__
+  id: 23
+  idhadron: -16
+  idlepton: null
+- coupling: 1
+  decay: ve
+  id: 23
+  idhadron: 12
+  idlepton: null
+- coupling: 1
+  decay: vm
+  id: 23
+  idhadron: 14
+  idlepton: null
+- coupling: 1
+  decay: vt
+  id: 23
+  idhadron: 16
+  idlepton: null
+particles:
+- cmd: ''
+  id: 11
+  name: e__minus__
+- cmd: ''
+  id: 25
+  name: H
+- cmd: ''
+  id: 13
+  name: mu__minus__
+- cmd: ''
+  id: 15
+  name: ta__minus__
+- cmd: ''
+  id: -24
+  name: W__plus__
+- cmd: ''
+  id: 23
+  name: Z
+selections:
+  H:
+    parameters: []
+    particles:
+    - 25
+  W__plus__:
+    parameters:
+    - WeakSingleBoson:ffbar2W = on
+    particles:
+    - -24
+  Z:
+    parameters:
+    - WeakBosonAndParton:qqbar2gmZg = on
+    - WeakBosonAndParton:qg2gmZq = on
+    particles:
+    - 23
+  e__minus__:
+    parameters: []
+    particles:
+    - 11
+  mu__minus__:
+    parameters: []
+    particles:
+    - 13
+  ta__minus__:
+    parameters: []
+    particles:
+    - 15

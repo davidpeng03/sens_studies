@@ -1,0 +1,158 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>&lt;no title&gt; &mdash; Neo-Set-Anubis 1.0.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b76e3c8a" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=c682d59b" />
+      <link rel="stylesheet" type="text/css" href="_static/bullets.css" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=8d563738"></script>
+      <script src="_static/doctools.js?v=9a2dae69"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            Neo-Set-Anubis
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="ReleaseUpdate.html">What’s New</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Installation.html">Installation and Deployment</a></li>
+<li class="toctree-l1"><a class="reference internal" href="BranchingRatioCalculation.html">Branching Ratio Calculation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="PythiaConf.html">Pythia Simulation Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="PythiaEventGenerator.html">Pythia Event Generator</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Neo-Set-Anubis</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">&lt;no title&gt;</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/BR_calculator.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <blockquote>
+<div><dl class="simple">
+<dt>BR_calculator.py [-h] [–method METHOD] [–prod_file] [–decay_file]</dt><dd><p>–model MODEL –calc_type {DecayTot,BR,ProdBR}
+–particle {N1,A}
+[–decay_channel DECAY_CHANNEL [DECAY_CHANNEL …]]
+[–mother_particle MOTHER_PARTICLE]</p>
+</dd>
+</dl>
+</div></blockquote>
+<p><em>arguments</em>:</p>
+<blockquote>
+<div><dl class="option-list">
+<dt><kbd><span class="option">-h</span>, <span class="option">--help</span></kbd></dt>
+<dd><p>show this help message and exit</p>
+</dd>
+</dl>
+<p class="attribution">—method METHOD       Calculation method to use (Python or File)</p>
+</div></blockquote>
+<blockquote>
+<div><dl class="option-list">
+<dt><kbd><span class="option">--prod_file</span></kbd></dt>
+<dd><p>Use precomputed production BR from file</p>
+</dd>
+</dl>
+<p class="attribution">—decay_file          Use precomputed decay BR from file</p>
+</div></blockquote>
+<blockquote>
+<div><dl class="option-list">
+<dt><kbd><span class="option">--model <var>MODEL</var></span></kbd></dt>
+<dd><p>The model name to use (e.g., HNL)</p>
+</dd>
+</dl>
+<p class="attribution">—calc_type {DecayTot,BR,ProdBR}</p>
+</div></blockquote>
+<blockquote>
+<div><blockquote>
+<div><p>Type of calculation (DecayTot, BR, or ProdBR)</p>
+</div></blockquote>
+<p class="attribution">—particle {N1,A}     Particle to be consider</p>
+</div></blockquote>
+<blockquote>
+<div><dl class="option-list">
+<dt><kbd><span class="option">--decay_channel <var>DECAY_CHANNEL</var></span></kbd></dt>
+<dd><p>Decay channel for BR (e.g., 211 13 for pion and muon)</p>
+</dd>
+</dl>
+<p class="attribution">—mother_particle MOTHER_PARTICLE</p>
+</div></blockquote>
+<blockquote>
+<div><blockquote>
+<div><p>Mother particle ID for ProdBR (e.g., 24 for W boson)</p>
+</div></blockquote>
+</div></blockquote>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Paul Nathaniel Swallow, Théo Reymermier, Anna Jane Mullin, Sofie Nordahl Erner.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

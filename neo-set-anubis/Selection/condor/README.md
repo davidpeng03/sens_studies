@@ -1,0 +1,1 @@
+These files create condor job submisison files, one for each index automatically found in the "samples_to_process.csv" file created from Madgraph scan output. See instructions in main Selection dir for more detail. 

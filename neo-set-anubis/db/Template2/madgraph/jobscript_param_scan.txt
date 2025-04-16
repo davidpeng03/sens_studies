@@ -1,0 +1,75 @@
+# ************************************************************
+#* MadGraph5_aMC@NLO *
+#* *
+#* * * *
+#* * * * * *
+#* * * * * 5 * * * * *
+#* * * * * *
+#* * * *
+#* *
+#* *
+#* VERSION 2.7.3 2020 -06 -21 *
+#* *
+#* The MadGraph5_aMC@NLO Development Team - Find us at *
+#* https :// server06.fynu.ucl.ac.be/projects/madgraph *
+#* *
+# ************************************************************
+#* *
+#* Command File for MadGraph5_aMC@NLO *
+#* *
+#* run as ./bin/mg5_aMC filename *
+#* *
+# ************************************************************
+#scl enable gcc-toolset-12 bash
+
+import model sm
+define p = g u c d s u~ c~ d~ s~
+define j = g u c d s u~ c~ d~ s~
+define vv = ve ve~
+define ell = e+ e-
+define q = u c d s u~ c~ d~ s~ 
+set automatic_html_opening False
+
+# UFO used by Mathusla:
+import model HAHM_variableMW_v5_UFO
+
+# UFO used by me previously: 
+#import model HeavyN_Majorana_NLO
+
+# Mathusla production commands: 
+#generate p p > w+, w+ > e+ n1
+#add process p p > w-, w- > e- n1
+#add process p p > z, z > ve n1
+#add process p p > z, z > ve~ n1
+
+
+generate p p > h2
+
+output HNL_Condor_CCDY_qqe
+launch HNL_Condor_CCDY_qqe
+
+#output HNL_2000evt_CCDY_n1_qqe_madspin
+#launch HNL_2000evt_CCDY_n1_qqe_madspin
+
+#output HNL_2000evt_CCDY_n1_alldec_madspin
+#launch HNL_2000evt_CCDY_n1_alldec_madspin
+
+#output HeavyN_Maj_2000evt_ggF_qqe_mn1_2p5_madspin_run1
+#launch HeavyN_Maj_2000evt_ggF_qqe_mn1_2p5_madspin_run1
+
+shower=py8
+madspin=ON
+
+db/Temp/madgraph/Cards/HNL_Cards/param_card.dat
+db/Temp/madgraph/Cards/HNL_Cards/run_card.dat
+db/Temp/madgraph/Cards/HNL_Cards/pythia8_card.dat
+db/Temp/madgraph/Cards/HNL_Cards/madspin_card.dat
+
+#set WN1 auto 
+#^why?
+set kap scan:[1e-2]
+set MHSinput scan:[2.0e2]
+
+#multi_run 5
+#generate_events -o
+# cd --> generate_events

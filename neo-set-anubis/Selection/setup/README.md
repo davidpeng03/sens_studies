@@ -1,0 +1,1 @@
+Set up the environment for running the acceptance scripts as "bash set_anubis_setup.sh". The .yml file contains everything in the environment I have been using on the HEP PCs and Condor to run the acceptance. This is a long list and probably not everything is necessary. 

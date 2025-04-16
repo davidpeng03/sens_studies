@@ -1,0 +1,162 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Installation and Deployment &mdash; Neo-Set-Anubis 1.0.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b76e3c8a" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=c682d59b" />
+      <link rel="stylesheet" type="text/css" href="_static/bullets.css" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=8d563738"></script>
+      <script src="_static/doctools.js?v=9a2dae69"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Branching Ratio Calculation" href="BranchingRatioCalculation.html" />
+    <link rel="prev" title="What’s New" href="ReleaseUpdate.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            Neo-Set-Anubis
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="ReleaseUpdate.html">What’s New</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Installation and Deployment</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#standard-installation">Standard Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#installation-methods">Installation Methods</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#available-software">Available Software</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#deployment-notes">Deployment Notes</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="BranchingRatioCalculation.html">Branching Ratio Calculation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="PythiaConf.html">Pythia Simulation Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="PythiaEventGenerator.html">Pythia Event Generator</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Neo-Set-Anubis</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Installation and Deployment</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/Installation.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="installation-and-deployment">
+<span id="index-0"></span><h1>Installation and Deployment<a class="headerlink" href="#installation-and-deployment" title="Link to this heading"></a></h1>
+<section id="standard-installation">
+<h2>Standard Installation<a class="headerlink" href="#standard-installation" title="Link to this heading"></a></h2>
+<p><strong>Set-Anubis</strong> is a Python library requiring Python &gt;= 3.8. It depends on the following <em>external</em> Python libraries:</p>
+<p>python-dotenv, matplotlib, sympy, plotly, pybind11, scipy, particle, python-multipart</p>
+<p>In addition, the Event Generation module requires:</p>
+<ul class="simple">
+<li><p><a class="reference external" href="https://arxiv.org/abs/1410.3012">Pythia 8.3</a> (requires a C++ compiler)</p></li>
+<li><p><a class="reference external" href="https://arxiv.org/abs/1405.0301">MadGraph5_aMC&#64;NLO</a> (optional, for advanced event generation)</p></li>
+<li><p><a class="reference external" href="https://hepmc.web.cern.ch/hepmc">HepMC3</a> (used by Pythia)</p></li>
+</ul>
+</section>
+<section id="installation-methods">
+<h2>Installation Methods<a class="headerlink" href="#installation-methods" title="Link to this heading"></a></h2>
+<p>You can install all the necessary software using the provided <cite>install.sh</cite> script. This script automates the installation of Pythia, MadGraph, and HepMC3, ensuring all dependencies are correctly handled.</p>
+<p>To install the software, use:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>./install.sh<span class="w"> </span>&lt;software1&gt;<span class="w"> </span>&lt;software2&gt;<span class="w"> </span>...
+</pre></div>
+</div>
+<p>For example, to install <cite>Pythia</cite>, <cite>MadGraph</cite>, and <cite>HepMC3</cite>, run:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>./install.sh<span class="w"> </span>Pythia<span class="w"> </span>MadGraph<span class="w"> </span>HepMC3
+</pre></div>
+</div>
+<p>This command will install all the required components and their dependencies.</p>
+</section>
+<section id="available-software">
+<h2>Available Software<a class="headerlink" href="#available-software" title="Link to this heading"></a></h2>
+<p>The following software can be installed using the <cite>install.sh</cite> script:</p>
+<ul class="simple">
+<li><p><strong>Pythia 8.3</strong>: Monte Carlo event generator for high-energy physics events.</p></li>
+<li><p><strong>MadGraph5_aMC&#64;NLO</strong>: A tool for simulating collisions at particle colliders.</p></li>
+<li><p><strong>HepMC3</strong>: A data format used for storing event records generated by particle collision experiments and simulations.</p></li>
+</ul>
+<p>Simply provide the names of the software as arguments to the <cite>install.sh</cite> script to install them.</p>
+</section>
+<section id="deployment-notes">
+<h2>Deployment Notes<a class="headerlink" href="#deployment-notes" title="Link to this heading"></a></h2>
+<p>Ensure that you have the necessary compilers installed:</p>
+<ul class="simple">
+<li><p>A <strong>C++</strong> compiler (e.g., <cite>g++</cite>) is required for compiling <strong>Pythia 8.3</strong>.</p></li>
+<li><p><strong>gfortran</strong> may be required if using specific features of <strong>MadGraph</strong>.</p></li>
+</ul>
+<p>Once the installation is complete, the software will be ready for event generation and other analyses.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="ReleaseUpdate.html" class="btn btn-neutral float-left" title="What’s New" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="BranchingRatioCalculation.html" class="btn btn-neutral float-right" title="Branching Ratio Calculation" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Paul Nathaniel Swallow, Théo Reymermier, Anna Jane Mullin, Sofie Nordahl Erner.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

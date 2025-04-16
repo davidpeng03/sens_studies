@@ -1,0 +1,10 @@
+llp_id: 9900012
+llp_type: hnl
+SS_path: "/r04/atlas/amullin/ANUBIS/Simulations/SimulationSwarms/"
+h5_path: "/r04/atlas/amullin/ANUBIS/Simulations/h5_files/"
+scanfile: "/r04/atlas/amullin/ANUBIS/SET_ANUBIS/samples_to_process.csv"
+minChargedPt: 0.5 
+minJetPt: 10.0 
+nevents: 2000
+minTheta: 0.828849
+maxTheta: 1.51461

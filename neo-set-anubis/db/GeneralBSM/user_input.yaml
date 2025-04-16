@@ -1,0 +1,40 @@
+- block: YUKAWA
+  name: ymtau
+  pdgcode:
+  - 15
+  value: 1.777
+- block: HIDDEN
+  name: MHSinput
+  pdgcode:
+  - 2
+  value: 200
+- block: HIDDEN
+  name: kap
+  pdgcode:
+  - 4
+  value: 1.0e-09
+- block: HIDDEN
+  name: mZDinput
+  pdgcode:
+  - 1
+  value: 20
+- block: YUKAWA
+  name: ymel
+  pdgcode:
+  - 11
+  value: 0.000511
+- block: YUKAWA
+  name: ymmu
+  pdgcode:
+  - 13
+  value: 0.1057
+- block: HIDDEN
+  name: aXM1
+  pdgcode:
+  - 5
+  value: 127.9
+- block: HIDDEN
+  name: epsilon
+  pdgcode:
+  - 3
+  value: 0.01

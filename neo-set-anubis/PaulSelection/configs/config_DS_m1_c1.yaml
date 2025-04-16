@@ -1,0 +1,24 @@
+#==== Selection configuration file ====
+#
+# LLP Info
+llp_id: 35
+llp_type: "hs"
+#
+# File Paths
+SimSwarmDir: "/usera/dp728/simulations"
+scanfile: "/usera/dp728/run_dir/samples_to_processDS.csv"
+outputDir: "/usera/dp728/run_dir/output/"
+#
+
+# Selections
+selection: { 
+             'nStations': 2, 
+             'eachTrack': False, 
+             'minP': {'LLP': 0.5, 'chargedTrack': 0.5, 'neutralTrack': 0.5, "jet": 0.1}, #GeV
+             'minPt': {'LLP': 10, 'chargedTrack': 10, 'neutralTrack': 10, "jet": 10}, #GeV
+             'minMET': 30, # GeV 
+             'minDR': {'jet': 0.5, 'chargedTrack': 0.5, 'neutralTrack': 0.5}, 
+             'max_nCharged': 0,
+             #'minTheta': 0.828849
+             #'maxTheta': 1.51461
+           }
