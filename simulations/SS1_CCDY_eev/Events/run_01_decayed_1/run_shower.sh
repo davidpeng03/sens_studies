@@ -1,0 +1,2 @@
+#!/usr/bin/env bash
+LD_LIBRARY_PATH=/usera/dp728/MG5_aMC_v3_5_4_pswallow/HEPTools/lib:$LD_LIBRARY_PATH /r04/atlas/amullin/ANUBIS/Simulations/MG5_aMC_v3_5_4_pswallow/HEPTools/MG5aMC_PY8_interface/MG5aMC_PY8_interface tag_1_pythia8.cmd

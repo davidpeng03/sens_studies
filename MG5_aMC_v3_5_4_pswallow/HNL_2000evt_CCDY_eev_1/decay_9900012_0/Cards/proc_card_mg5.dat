@@ -1,0 +1,53 @@
+#************************************************************
+#*                     MadGraph5_aMC@NLO                    *
+#*                                                          *
+#*                *                       *                 *
+#*                  *        * *        *                   *
+#*                    * * * * 5 * * * *                     *
+#*                  *        * *        *                   *
+#*                *                       *                 *
+#*                                                          *
+#*                                                          *
+#*         VERSION 3.5.5                 2024-06-17         *
+#*                                                          *
+#*    The MadGraph5_aMC@NLO Development Team - Find us at   *
+#*    https://server06.fynu.ucl.ac.be/projects/madgraph     *
+#*                                                          *
+#************************************************************
+#*                                                          *
+#*               Command File for MadGraph5_aMC@NLO         *
+#*                                                          *
+#*     run as ./bin/mg5_aMC  filename                       *
+#*                                                          *
+#************************************************************
+set ignore_six_quark_processes False
+set low_mem_multicore_nlo_generation False
+set complex_mass_scheme False
+set include_lepton_initiated_processes False
+set loop_optimized_output True
+set loop_color_flows False
+set zerowidth_tchannel True
+set nlo_mixed_expansion True
+define l+  =  e+ mu+
+set pythia8_path /r04/atlas/amullin/ANUBIS/Simulations/MG5_aMC_v3_5_4_\
+pswallow/HEPTools/pythia8 --no_save
+set cluster_type condor --no_save
+set cluster_queue None --no_save
+set ninja ./HEPTools/lib --no_save
+set collier ./HEPTools/lib --no_save
+set lhapdf /r04/atlas/amullin/ANUBIS/Simulations/MG5_aMC_v3_5_4_pswall\
+ow/HEPTools/lhapdf6_py3/bin/lhapdf-config --no_save
+set pineappl pineappl --no_save
+set lhapdf_py3 /r04/atlas/amullin/ANUBIS/Simulations/MG5_aMC_v3_5_4_ps\
+wallow/HEPTools/lhapdf6_py3/bin/lhapdf-config --no_save
+set mg5amc_py8_interface_path /r04/atlas/amullin/ANUBIS/Simulations/MG\
+5_aMC_v3_5_4_pswallow/HEPTools/MG5aMC_PY8_interface --no_save
+set OLP MadLoop --no_save
+set output_dependencies external --no_save
+set group_subprocesses Auto --no_save
+set gauge unitary --no_save
+set max_npoint_for_channel 0 --no_save
+set default_unset_couplings 99 --no_save
+set max_t_for_channel 99 --no_save
+set auto_update 7 --no_save
+set mg5_path /usera/dp728/MG5_aMC_v3_5_4_pswallow --no_save
