@@ -226,7 +226,8 @@ def createSampleDataFrames(df, LLPid, minPt):
     #so makes a list of all the 
     newLLPindices = [ x for x in LLPindices if x not in childrenDFindices]
 
-    newLLPindices = LLPindices
+    #newLLPindices = LLPindices
+
     """
     newLLPindicesfordistances = [
     x for x in LLPindices
@@ -565,13 +566,13 @@ def applySelection(SDFs, selection={"nStations": 2,
 
 
 def createCTauFile(dataFrame, runID, infoDict, suffix="", outputDir=""):
-    #outDir=f"{outputDir}/ctaus_HNL/{runID}/"
-    outDir=f"{outputDir}/ctaus_DS/{runID}/"
+    outDir=f"{outputDir}/ctaus_HNL/{runID}/"
+    #outDir=f"{outputDir}/ctaus_DS/{runID}/"
     if not os.path.exists(outDir):
         os.makedirs(outDir)
 
-    #with open(f"{outDir}/HEPMC_HNL_ctau_{infoDict[f'{runID}']['LLPmass']}.txt","w") as f:
-    with open(f"{outDir}/HEPMC_DS_ctau_{infoDict[f'{runID}']['LLPmass']}.txt","w") as f:
+    #with open(f"{outDir}/HEPMC_DS_ctau_{infoDict[f'{runID}']['LLPmass']}.txt","w") as f:
+    with open(f"{outDir}/HEPMC_HNL_ctau_{infoDict[f'{runID}']['LLPmass']}.txt","w") as f:
         f.write("mass,width,Average DecayDist/mm,Average ctau/mm\n")
         f.write(f"{infoDict[f'{runID}']['LLPmass']},{infoDict[f'{runID}']['LLPdecayWidth']},{dataFrame['decayVertexDist'].mean()},{dataFrame['ctau'].mean()}\n")
 
@@ -608,10 +609,11 @@ if __name__=="__main__":
     sampleInfo = sampleInfoDicts[runID]
     
     #===========================================================================================================================================================
-    """
+    
     #was commented out for DS 
     # Get Expected HNL Lifetime:
     HNLCalc_file = "/usera/amullin/Documents/ANUBIS/acceptance_results/HNLCalc-main/HNLCalc_ctau_table.csv"
+    HNLCalc_file = "/usera/dp728/HNLCalc_ctau_table.csv"
     HNLCalc_df = pd.read_csv(HNLCalc_file)
     HNLCalc_ctau = HNLCalc_df.loc[(HNLCalc_df["Mass"] == sampleInfo["LLPmass"]) & (HNLCalc_df["Coupling"] == sampleInfo["coupling"]), "Lifetime"].values
     if HNLCalc_ctau.size > 0:
@@ -620,7 +622,7 @@ if __name__=="__main__":
         print(f"The lifetime value is: {HNLCalc_lifetime}, ctau = {HNLCalc_ctauVal}")
     else:
         print("No matching lifetime found for the given mass and coupling.")
-    """
+    
    #===========================================================================================================================================================
   
     #fileName = f"/r04/atlas/amullin/ANUBIS/Simulations/SimulationSwarms/{sampleInfo['SimSwarmName']}/Events/{sampleInfo['runName']}_decayed_1/tag_1_pythia8_events.hepmc"
@@ -693,12 +695,12 @@ if __name__=="__main__":
 
     #df.to_csv("./tempDF-cut?.csv")
 
-    #reweightDecayPositions(sampleDFs["LLPs"], sampleDFs["LLPchildren"], HNLCalc_lifetime, sampleInfo["LLPid"]) 
+    reweightDecayPositions(sampleDFs["LLPs"], sampleDFs["LLPchildren"], HNLCalc_lifetime, sampleInfo["LLPid"]) 
     sampleDFs["finalStatePromptJets"] = createJetDF(eventNos, sampleDFs["chargedFinalStates"], sampleDFs["neutralFinalStates"])
     print(sampleDFs)
     cutDict =  applySelection(sampleDFs, selection=selection)
     cutDict = sampleDFs
-    #createCTauFile(sampleDFs["LLPs"], runID, sampleInfoDicts, suffix="", outputDir="./")
+    createCTauFile(sampleDFs["LLPs"], runID, sampleInfoDicts, suffix="", outputDir="./")
     print(f"LLP Mass: {np.mean(sampleDFs['LLPs']['mass'])}")
     print(f"Average LLP Decay Distance (mm): {sampleDFs['LLPs']['decayVertexDist'].mean()}")
     print(f"Average LLP ctau (mm): {sampleDFs['LLPs']['ctau'].mean()}")
