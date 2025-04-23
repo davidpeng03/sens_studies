@@ -216,7 +216,7 @@ def createSampleDataFrames(df, LLPid, minPt):
         originatingLLP.append(LLPchildrenDict["LLPindex"][i])
 
     LLPchildren = df.iloc[childrenDFindices]
-    #LLPchildren = LLPchildren[~LLPchildren.index.duplicated(keep='first')]
+    LLPchildren = LLPchildren[~LLPchildren.index.duplicated(keep='first')]
 
 
     # Sometimes a MC generator can propagate a particle without a decay such that the 'decay chain' is of the form:
@@ -224,7 +224,11 @@ def createSampleDataFrames(df, LLPid, minPt):
     # Therefore, the "True" LLPs are the first in this chain as that represents the actual production.
     # i.e. if an LLP is also in the LLP children list, then it should be removed.
     #so makes a list of all the 
+
+
+
     newLLPindices = [ x for x in LLPindices if x not in childrenDFindices]
+
 
     #newLLPindices = LLPindices
 
@@ -483,7 +487,7 @@ def applySelection(SDFs, selection={"nStations": 2,
     print("++++++++++++++++++++++++++++++++")
     #h.precutcavern(LLPsSel)
     print("this is llp seleciton")
-    print(LLPsSel)
+    print(LLPsSel.columns)
     LLPsGeo, boundaries = h.performGeometryCut(LLPsSel,cav, ANUBISstations,minStationRadius,RPC_Pos1, RPC_Pos2, RPC_Pos3, plot = True) 
     print(LLPsGeo)
     cutFlow["nLLP_Geometry"] = len(LLPsGeo.index)
@@ -567,6 +571,8 @@ def applySelection(SDFs, selection={"nStations": 2,
 
 def createCTauFile(dataFrame, runID, infoDict, suffix="", outputDir=""):
     outDir=f"{outputDir}/ctaus_HNL/{runID}/"
+    print("AAAAAAAAAAAAAA")
+    print(outputDir)
     #outDir=f"{outputDir}/ctaus_DS/{runID}/"
     if not os.path.exists(outDir):
         os.makedirs(outDir)
@@ -699,7 +705,7 @@ if __name__=="__main__":
     sampleDFs["finalStatePromptJets"] = createJetDF(eventNos, sampleDFs["chargedFinalStates"], sampleDFs["neutralFinalStates"])
     print(sampleDFs)
     cutDict =  applySelection(sampleDFs, selection=selection)
-    cutDict = sampleDFs
+    #cutDict = sampleDFs
     createCTauFile(sampleDFs["LLPs"], runID, sampleInfoDicts, suffix="", outputDir="./")
     print(f"LLP Mass: {np.mean(sampleDFs['LLPs']['mass'])}")
     print(f"Average LLP Decay Distance (mm): {sampleDFs['LLPs']['decayVertexDist'].mean()}")

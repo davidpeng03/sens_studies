@@ -371,7 +371,8 @@ def performGeometryCut(LLPsSel,cav, ANUBISstations,minStationRadius,RPC_Pos1, RP
     mask = []
     for i, row in hits_df.iterrows():
         #X, Y, Z = row['decayVertexParsed'][0], row['decayVertexParsed'][1], row['decayVertexParsed'][2]
-        X, Y, Z = row['decayVertex'][0], row['decayVertex'][1], row['decayVertex'][2]
+        X, Y, Z = row['decayVertexDist_Weighted'][0], row['decayVertexDist_Weighted'][1], row['decayVertexDist_Weighted'][2]
+        #X, Y, Z = row['decayVertex_restWeighted'][0], row['decayVertex_restWeighted'][1], row['decayVertex_restWeighted'][2]
         X = X-1.7 
         Y = Y-cav.CavernYLength/2 + 11.37
         """
@@ -382,7 +383,7 @@ def performGeometryCut(LLPsSel,cav, ANUBISstations,minStationRadius,RPC_Pos1, RP
         print("this is row['decayVertexParsed'][2]")
         print(row['decayVertexParsed'][2])
         """
-        r, theta, phi = row['decayVertexDist'], row['theta'],row['phi']
+        r, theta, phi = row['decayVertexDist_restWeighted'], row['theta'],row['phi']
 
 
         inCavern = cav.inCavern(X, Y, Z, maxRadius=minStationRadius - 0.20)
@@ -507,10 +508,10 @@ def checkDecayHits(LLPsGeo, cav, ANUBISstations, minStationRadius, RPC_Pos1, RPC
             continue
         
         # Compute intersection
-        X, Y, Z = row['decayVertex'][0], row['decayVertex'][1], row['decayVertex'][2]
+        X, Y, Z = row['decayVertex_weighted'][0], row['decayVertex_weighted'][1], row['decayVertex_weighted'][2]
         X = X - 1.7
         Y = Y - cav.CavernYLength / 2 + 11.37
-        r, theta, phi = row['decayVertexDist'], row['theta'], row['phi']
+        r, theta, phi = row['decayVertexDist_weighted'], row['theta'], row['phi']
         intANUBIS = cav.intersectANUBISstationsSimple2(X, Y, Z, r, theta, phi, ANUBISstations)
         
         #one valid interaction when hits 2 anubis rpcs 
