@@ -383,7 +383,7 @@ def performGeometryCut(LLPsSel,cav, ANUBISstations,minStationRadius,RPC_Pos1, RP
         print("this is row['decayVertexParsed'][2]")
         print(row['decayVertexParsed'][2])
         """
-        r, theta, phi = row['decayVertexDist_restWeighted'], row['theta'],row['phi']
+        r, theta, phi = row['decayVertexDist_Weighted'], row['theta'],row['phi']
 
 
         inCavern = cav.inCavern(X, Y, Z, maxRadius=minStationRadius - 0.20)
