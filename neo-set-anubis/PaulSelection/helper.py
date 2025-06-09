@@ -2,12 +2,17 @@ import sys, os
 import csv
 import yaml
 import numpy as np
-#import pandas as pd
+import pandas as pd
 from scipy import constants
 
 import zipfile
 import gzip
 import shutil 
+import pickle
+import defineGeometry as g
+	
+from random import randint
+
 #import defineGeometry as g
 
 #====================================================#
@@ -19,6 +24,54 @@ def parseConfig(configFile):
         configuration = yaml.safe_load(f)
 
     return configuration
+
+def createGeometry(geoFile, origin=[]):
+    print(geoFile)
+    
+    if os.path.isfile(geoFile):
+        with open(geoFile, "rb") as pkl:
+            cavern = pickle.load(pkl)
+            print("found geofile?")
+    else:
+        cavern = g.ATLASCavern()
+        #ANUBISstations = cavern.createSimpleRPCs([cavern.archRadius-0.2, cavern.archRadius-0.6, cavern.archRadius-1.2], RPCthickness=0.06)
+        # rng 0 and 1 and then making ot need 2 1s and and 1 0 
+        # check names 
+        # if naming isnt right
+        # manually run a few of the lower lifetimes and one at a lower life time to check if there is an obvious difference 
+        # double check the weighted c*tau case - to make sure its properly reweighting the lifetime.
+        # take the c tau value for the given lifetime and see if it corresponds to a bit to the left for the ctau
+        # warning any plotting things in hepmc are in mm - dataframes has the units at the top - 
+        
+        """
+        #triplet
+        if intersect
+            RPC_number = 3
+            tolerance = 2 
+            pass = False
+            hit = 0
+            for rpc in RPC_number:
+                number = randint(1, 100)
+                if number < 98:
+                    hit += 1
+
+            if hit >= tolerance:
+                pass = True
+        """
+            
+
+        ANUBISstations = cavern.createSimpleRPCs([cavern.archRadius-0.2, cavern.archRadius-1.2], RPCthickness=0.06)
+        cavern.RPCMaxRadius = cavern.archRadius-1.2-0.5
+        if origin == "IP" or len(origin)==0:
+            # Set the Cavern origin to the IP to align with simulation that puts it at the IP
+            cavern.posOrigin = [cavern.IP["x"], cavern.IP["y"], cavern.IP["z"]]
+        else:
+            cavern.posOrigin = origin
+        with open(geoFile, "wb") as pkl:
+            pickle.dump(cavern, pkl)
+
+    return cavern
+
 
 def parseCSV(csvFile):
     # Assumes the csv has the following data structure
@@ -34,30 +87,44 @@ def parseCSV(csvFile):
                 continue #Skip the header
 
             try:
-                
-                sampleDicts[line[0]]={"runName": line[1],
-                                      "LLPmass": float(line[2]), # GeV
-                                      "coupling": float(line[3]),
-                                      "crossSection": float(line[4]),
-                                      "LLPdecayWidth": float(line[5]), # GeV
-                                      "LLPid": int(line[6]),
-                                      "SimSwarmName": line[7],
-                                      "sample": f"{line[7].split('_')[1]}_{line[7].split('_')[2]}"
-                                    }
-                """
-                #DS case
-                sampleDicts[line[0]]={"runName": line[1],
-                                      "Mzdmass": float(line[2]), # GeV
-                                      "LLPmass": float(line[3]), # GeV
-                                      "epsilon": float(line[4]), #for new UFO file change back if doesnt work
-                                      "coupling": float(line[5]),
-                                      "crossSection": float(line[6]),
-                                      "LLPid": int(line[11]),
-                                      "SimSwarmName": line[12],
-                                      "sample": f"{line[12].split('_')[1]}"
-                                    }
-                """
-                
+                a = 0
+                ds = 1
+                #if "electron" in csvFile:
+                if a == 1:
+                    sampleDicts[line[0]]={"runName": line[1],
+                                          "LLPmass": float(line[2]), # GeV
+                                          "coupling": float(line[3]),
+                                          "crossSection": float(line[4]),
+                                          "LLPdecayWidth": float(line[5]), # GeV
+                                          "LLPid": int(line[6]),
+                                          "SimSwarmName": line[7],
+                                          "sample": f"{line[7].split('_')[1]}_{line[7].split('_')[2]}"
+                                        }
+                elif ds == 1:
+                    #DS case
+                    sampleDicts[line[0]]={"runName": line[1],
+                                        "Mzdmass": float(line[2]), # GeV
+                                        "LLPmass": float(line[3]), # GeV
+                                        "epsilon": float(line[4]), #for new UFO file change back if doesnt work
+                                        "coupling": float(line[5]),
+                                        "crossSection": float(line[6]),
+                                        "LLPdecayWidth": float(line[9]), # GeV
+
+                                        "LLPid": int(line[11]),
+                                        "SimSwarmName": line[12],
+                                        "sample": f"{line[12].split('_')[1]}"
+                                        }
+
+                else:
+                    sampleDicts[line[0]]={"runName": line[1],
+                                          "LLPmass": float(line[2]), # GeV
+                                          "coupling": float(line[8]),
+                                          "crossSection": float(line[4]),
+                                          "LLPdecayWidth": float(line[5]), # GeV
+                                          "LLPid": int(line[6]),
+                                          "SimSwarmName": line[7],
+                                          "sample": f"{line[7].split('_')[1]}_{line[7].split('_')[2]}"
+                                        }
             except:
                 print(f"Something went wrong when parsing csv, for this row:")
                 print(line)
@@ -66,6 +133,7 @@ def parseCSV(csvFile):
 
 
     return sampleDicts
+
 """
                 sampleDicts[line[0]]={"runName": line[1],
                                       "LLPmass": float(line[2]), # GeV
@@ -76,6 +144,7 @@ def parseCSV(csvFile):
                                       "SimSwarmName": line[7],
                                       "sample": f"{line[7].split('_')[1]}_{line[7].split('_')[2]}"
 """
+
 
 def groupMassAndCoupling(sampleDicts):
     # Produces a nested dictionary with the form { sample: { LLP Mass: { Coupling : [List of Run IDs] } } }
@@ -100,6 +169,8 @@ def groupMassAndCoupling(sampleDicts):
 
     return outputDict
 
+
+
 def is_hepmc_zipped(filename):
     zip_extensions = ['.gz', '.gzip']
     ext = os.path.splitext(filename)[1]
@@ -109,6 +180,7 @@ def unzip_file(zip_file, out_file):
     with gzip.open(zip_file, 'rb') as f_in:
         with open(out_file, 'wb') as f_out:
             shutil.copyfileobj(f_in, f_out)
+
 
 #====================================================#
 #===  Functions to process Simulation variables   ===#
@@ -211,19 +283,28 @@ def calculate_pt(px, py):
 
 #=======================================================================
 
+
 # The below 3 reweighting equations work assuming you provide it with a row from a pandas dataframe
 def reweightDecayDistByLifetime(row, lifetime):
+#def reweightDecayDistByLifetime(row, lifetime, seed=""):
+#    if seed !="":
+#        np.random.seed(seed)
+    #print(lifetime)
+    #print(row["boost"])
     # Reweight decay position using lifetime using Eqn 49.14 (pg 743) from the 2022 PDG https://inspirehep.net/files/850fdb9ba039c29dfbc1f071e6afd6e6
-    return (np.random.exponential(scale = lifetime * row["boost"]) * row["beta"] * constants.c)/1000 # In mm
+    return (np.random.exponential(scale = lifetime * row["boost"]) * row["beta"] * constants.c)*1000 # In mm
 
-def reweightDecayDistByPosition(row, lifetime):
+def reweightDecayDistByPosition(row, lifetime, seed=""):     
     # Reweight decay position using lifetime using Eqn 49.15 (pg 743) from the 2022 PDG https://inspirehep.net/files/850fdb9ba039c29dfbc1f071e6afd6e6
-    return (np.random.exponential(scale = lifetime * row["boost"] * row["beta"] * constants.c))/1000 # In mm
+    return (np.random.exponential(scale = lifetime * row["boost"] * row["beta"] * constants.c))*1000 # In mm
             
-def reweightDecayDistByRestLifetime(row, lifetime):
+def reweightDecayDistByRestLifetime(row, lifetime, seed=""):
+ 
     # Reweight decay position using lifetime using Eqn 49.14 (pg 743) from the 2022 PDG https://inspirehep.net/files/850fdb9ba039c29dfbc1f071e6afd6e6
     # But with the particle in the rest frame (boost=1) and then boosted.
-    return (np.random.exponential(scale = lifetime * 1) * row["boost"] * row["beta"] * constants.c)/1000 # In mm
+    return (np.random.exponential(scale = lifetime * 1) * row["boost"] * row["beta"] * constants.c)*1000 # In mm
+
+
 
 # This assumes you provide it with a row from a pandas dataframe, and assumes the reweightedDecayDistance is in mm.
 def getReweightedDecayPosition(row, decayDistanceColumn):
@@ -238,6 +319,7 @@ def getDecayVertexTranslation(row, LLPdf, vertexColumn):
     translatedVertex = tuple( [ a + b for a, b in zip(row[vertexColumn], translation) ] )
 
     return translatedVertex
+
 
 def createSimpleRPCs(self, radii, RPCthickness=0.06, origin=[]):
     if len(origin)==0: # Assume origin of IP unless otherwise stated
@@ -268,346 +350,199 @@ def createSimpleRPCs(self, radii, RPCthickness=0.06, origin=[]):
 #====================================================#
 #===           Function for Selections            ===#
 #====================================================#
-
-#TODO: Outline the Geometry Cuts
-def performGeometryCut(LLPsSel,cav, ANUBISstations,minStationRadius,RPC_Pos1, RPC_Pos2, RPC_Pos3, plot = True):
-    print("2")
-    import datetime
-    import pickle
-    import argparse
-
-    parser = argparse.ArgumentParser(description='Provide an input file')
-    #args = parser.parse_args()
-    
-
-    cav.createCavernVault()
-
-
-    # Create ANUBIS RPC Layers
-    #   - Afterwards save to a pickle file. 
-    #   - Reload RPCs from pickle file if it exists.
-
-
-    print("Checking hit intersections...")
-    hitStart1=datetime.datetime.now()
-    print(hitStart1)
-    hitBins = {"x": 100, "y": 100, "z": 100}
-    # Check whether a set of points intersect ANUBIS
-    """
-    x = np.linspace(cav.CavernX[0] - 5, cav.CavernX[1] + 5, hitBins["x"])
-    y = np.linspace(cav.CavernY[0] - 5, (cav.archRadius + cav.centreOfCurvature["y"]) + 5, hitBins["y"])
-    z = np.linspace(cav.CavernZ[0] - 5, cav.CavernZ[1] + 5, hitBins["z"])
-
-    hitBins["widthX"] = abs(x[1]-x[0])
-    hitBins["widthY"] = abs(y[1]-y[0])
-    hitBins["widthZ"] = abs(z[1]-z[0])
-    hitBins["rangeX"] = [x[0]-(hitBins["widthX"]/2), x[-1]+(hitBins["widthX"]/2)]
-    hitBins["rangeY"] = [y[0]-(hitBins["widthY"]/2), y[-1]+(hitBins["widthY"]/2)]
-    hitBins["rangeZ"] = [z[0]-(hitBins["widthZ"]/2), z[-1]+(hitBins["widthZ"]/2)]
-    """
-    #hitbins are probably just setting up the bins and binwidths for the actual hits
-    #anubisstations then just makes a list of all the stations
-    """
-    nHits=0
-    passedHits, failedHits = [], []
-    for X in x:
-        for Y in y:
-            for Z in z:
-                #print(f"Before Intersection: {datetime.datetime.now()}")
-                inCavern = cav.inCavern(X, Y, Z)
-                inATLAS = cav.inATLAS(X, Y, Z, trackingOnly=False)
-                intANUBIS = cav.intersectANUBISstations(X, Y, Z, ANUBISstations, origin=[])
-
-                if ( inCavern and not inATLAS and (len(intANUBIS[1]) >= 2) ):
-                    passedHits.append((X,Y,Z))
-                else:
-                    failedHits.append((X,Y,Z))
-                #print(f"After Intersection: {datetime.datetime.now()}")
-                print(f"{nHits}/{len(x)*len(y)*len(z)}")
-                nHits+=1
-                #input("...")
-
-    """
-    hitEnd1=datetime.datetime.now()
-    print(hitEnd1)
-    #print(f"Took {hitEnd1 - hitStart1}")
-
-    #this is to be cav.createSimpleRPCs but when movign into helper didnt have cav defined so this might be easier to just have a copy of createSimpleRPCs in helpers than calling it
-
-    #finding minimum point from probably ip as constraint for hit or not
-
-    nHits=0
-    """
-    passedHits, failedHits = [], []
-    for X in x:
-        for Y in y:
-            for Z in z:
-                print(f"{nHits}/{len(x)*len(y)*len(z)}", end="\r", flush=True) #progress bar?
-                inCavern = cav.inCavern(X, Y, Z, maxRadius=minStationRadius - 0.20)
-                inATLAS = cav.inATLAS(X, Y, Z, trackingOnly=True)
-                intANUBIS = cav.intersectANUBISstationsSimple(X, Y, Z, ANUBISstations)
-
-                if ( inCavern and not inATLAS and (len(intANUBIS[1]) >= 2) ):
-                    passedHits.append((X,Y,Z))
-                else:
-                    failedHits.append((X,Y,Z))
-                nHits+=1
-    """
-    
-    import pandas as pd
-    hits_df = LLPsSel
-    print("this is hits inputed to selection")
-    print(hits_df)
-    import ast
-    #was for reading csv file
-    #hits_df['decayVertexParsed'] = hits_df['decayVertex'].apply(ast.literal_eval)
-    
-    allhits = []
-    passedHits, failedHits = [], []
-    passedevents, failedevents = [], []
-    eventeta = []
-    eventphi = []
-
-    mask = []
-    for i, row in hits_df.iterrows():
-        #X, Y, Z = row['decayVertexParsed'][0], row['decayVertexParsed'][1], row['decayVertexParsed'][2]
-        X, Y, Z = row['decayVertexDist_Weighted'][0], row['decayVertexDist_Weighted'][1], row['decayVertexDist_Weighted'][2]
-        #X, Y, Z = row['decayVertex_restWeighted'][0], row['decayVertex_restWeighted'][1], row['decayVertex_restWeighted'][2]
-        X = X-1.7 
-        Y = Y-cav.CavernYLength/2 + 11.37
-        """
-        print("this is x")
-        print(X)
-        print("this is row['decayVertexParsed']")
-        print(row['decayVertexParsed'])
-        print("this is row['decayVertexParsed'][2]")
-        print(row['decayVertexParsed'][2])
-        """
-        r, theta, phi = row['decayVertexDist_Weighted'], row['theta'],row['phi']
-
-
-        inCavern = cav.inCavern(X, Y, Z, maxRadius=minStationRadius - 0.20)
-        inATLAS = cav.inATLAS(X, Y, Z, trackingOnly=True)
-        intANUBIS = cav.intersectANUBISstationsSimple2(X, Y, Z,r, theta, phi, ANUBISstations)
-
-        if ( inCavern and not inATLAS and (len(intANUBIS[1]) >= 2) ):
-            passedHits.append((X,Y,Z))
-            passedevents.append(row["eventNumber"])
-
-        else:
-            failedHits.append((X,Y,Z))
-        allhits.append((X,Y,Z))
-
-        condition =inCavern and not inATLAS and (len(intANUBIS[1]) >= 2)
-        mask.append(condition)
-        #eventeta.append(row["eta"])
-        #eventphi.append(row["phi"])
-
-        if i % 1000 == 0:
-            print(f"Checked {i}/{len(hits_df)} hits", end="\r", flush=True)
-    filtered_df = hits_df[mask].reset_index(drop=True)
-    hitEnd2=datetime.datetime.now()
-    print(hitEnd2)
-    print(f"Took {hitEnd2 - hitEnd1}")
-    print(passedevents)
-    print(allhits)
-    print(f"Passed: {len(passedHits)} ({len(passedHits)/(len(passedHits)+len(failedHits))}%)  | Failed: {len(failedHits)} ({len(failedHits)/(len(passedHits)+len(failedHits))}%)")
-    if plot:
-        import matplotlib.pyplot as plt
-
-        # Extract coordinates
-        x_vals = [pt[0] for pt in passedHits]
-        y_vals = [pt[1] for pt in passedHits]
-        z_vals = [pt[2] for pt in passedHits]
-
-        # Define bin counts
-        n_bins_x = 100
-        n_bins_y = 100
-        n_bins_z = 100
-
-        # Calculate min/max for each axis
-        #data
-        #min_x, max_x = min(x_vals), max(x_vals)
-        #min_z, max_z = min(z_vals), max(z_vals)
-        #min_y, max_y = min(y_vals), max(y_vals)
-        #anubis
-        min_x, max_x = cav.CavernX[0] - 5, cav.CavernX[1] + 5
-        min_y, max_y = cav.CavernY[0] - 5, (cav.archRadius + cav.centreOfCurvature["y"]) + 5
-        min_z, max_z = cav.CavernZ[0] - 5, cav.CavernZ[1] + 5
-
-        # Calculate bin widths
-        width_x = (max_x - min_x) / n_bins_x
-        width_y = (max_y - min_y) / n_bins_y
-        width_z = (max_z - min_z) / n_bins_z
-
-        # Pad ranges by half a bin
-        range_x = [min_x - width_x / 2, max_x + width_x / 2]
-        range_y = [min_y - width_y / 2, max_y + width_y / 2]
-        range_z = [min_z - width_z / 2, max_z + width_z / 2]
-
-        # Update hitBins dictionary
-        hitBins = {
-            "x": n_bins_x,
-            "y": n_bins_y,
-            "z": n_bins_z,
-            "widthX": width_x,
-            "widthY": width_y,
-            "widthZ": width_z,
-            "rangeX": range_x,
-            "rangeY": range_y,
-            "rangeZ": range_z
-        }
-        cav.plotFullCavern(ANUBISrpcs=[RPC_Pos1, RPC_Pos2, RPC_Pos3], plotATLAS=True, plotFailed=False, 
-                            hits={"passed": allhits, "failed": failedHits, "bins": hitBins}, suffix=f"precut") #{args.suffix}
-
-        cav.plotFullCavern(ANUBISrpcs=[RPC_Pos1, RPC_Pos2, RPC_Pos3], plotATLAS=True, plotFailed=False, 
-                                    hits={"passed": passedHits, "failed": failedHits, "bins": hitBins}, suffix=f"_WithHits") #{args.suffix}
-        print(datetime.datetime.now())
-        """
-        plt.figure(figsize=(10,6))
-        cuteventeta = [e for e in eventeta if -15 <= e <= 15]
-        plt.hist(cuteventeta, bins=100, color='purple', alpha=0.75)
-        plt.xlabel("η (pseudorapidity)")
-        plt.ylabel("Number of hits")
-        plt.title("Pseudorapidity Distribution")
-        plt.grid(True)
-        plt.tight_layout()
-        plt.savefig("pseudorapidity_distribution.pdf")
-        plt.show()
-
-        plt.figure(figsize=(10,6))
-        plt.hist(eventphi, bins=90, color='orange', alpha=0.75)
-        plt.xlabel("ϕ (phi) [radians]")
-        plt.ylabel("Number of hits")
-        plt.title("Azimuthal Angle (ϕ) Distribution")
-        plt.grid(True)
-        plt.tight_layout()
-        plt.savefig("phi_distribution.pdf")
-        plt.show()
-        """
-
-    return filtered_df, failedHits # return itself for now to be able to verify selection chain function
-
-#TODO: Outline the Cuts based on the LLP children
-def checkDecayHits(LLPsGeo, cav, ANUBISstations, minStationRadius, RPC_Pos1, RPC_Pos2, RPC_Pos3, nHits=2, plot=True, each=True):
-
-    df = LLPsGeo
-    from collections import defaultdict
-
-    passing_event_numbers = set()
-    intersection_counts = defaultdict(int)
-
-    passedHits = []
-
-    # This assumes your df is sorted by eventNumber, but doesn't have to be
-    for idx, row in df.iterrows():
-        event = row['eventNumber']
-        
-        # Skip if we've already found 2 intersections for this event
-        if event in passing_event_numbers:
-            continue
-        
-        # Compute intersection
-        X, Y, Z = row['decayVertex_weighted'][0], row['decayVertex_weighted'][1], row['decayVertex_weighted'][2]
-        X = X - 1.7
-        Y = Y - cav.CavernYLength / 2 + 11.37
-        r, theta, phi = row['decayVertexDist_weighted'], row['theta'], row['phi']
-        intANUBIS = cav.intersectANUBISstationsSimple2(X, Y, Z, r, theta, phi, ANUBISstations)
-        
-        #one valid interaction when hits 2 anubis rpcs 
-        if len(intANUBIS[1]) >= 2:
-            intersection_counts[event] += 1
-        
-        # If we've found 2 intersecting tracks, mark event as passing
-        if intersection_counts[event] >= 2:
-            passedHits.append((X,Y,Z))
-            passing_event_numbers.add(event)
-
-    # Final filtering step
-    filtered_df = df[df['eventNumber'].isin(passing_event_numbers)].reset_index(drop=True)
-
-
-    #grouped = filtered_df.groupby('eventNumber')
-
-            
-    #print(f"Passed events : {len(filtered_df)} ({len(filtered_df)/(len(df))}%)  | Failed events: {len(df)-len(filtered_df)} ({(len(df)-len(filtered_df))/(len(df))}%)")
-    if len(df) == 0:
-        print("⚠️ No events in input dataframe (df). Skipping percentage breakdown.")
-        print(f"Passed events: {len(filtered_df)} | Failed events: 0")
+def checkLLPdecays(row, childrenOfLLPs):
+    passed=False
+    if row["nChildren"] == 1:
+        passed = len(childrenOfLLPs[(childrenOfLLPs.eventNumber==row["eventNumber"]) & (childrenOfLLPs.particleIndex == row["childrenIndices"][0])]["PID"] == row["PID"])>=1
+    elif row["nChildren"] > 1:
+        passed = True
     else:
-        print(f"Passed events : {len(filtered_df)} ({len(filtered_df)/len(df)*100:.2f}%)  | Failed events: {len(df)-len(filtered_df)} ({(len(df)-len(filtered_df))/len(df)*100:.2f}%)")
+        passed = False
 
-    if plot:
-        import matplotlib.pyplot as plt
+    return passed
 
-        # Extract coordinates
-        x_vals = [pt[0] for pt in passedHits]
-        y_vals = [pt[1] for pt in passedHits]
-        z_vals = [pt[2] for pt in passedHits]
+def checkInCavern(row, geometry, maxRadius, decayVertex="decayVertex"):
+    # Transform to the Cavern Centre Coordinates and m
+    X, Y, Z = geometry.coordsToOrigin(row[decayVertex][0]*1E-3, row[decayVertex][1]*1E-3, row[decayVertex][2]*1E-3)
+    return geometry.inCavern(X, Y, Z, maxRadius)
 
-        # Define bin counts
-        n_bins_x = 100
-        n_bins_y = 100
-        n_bins_z = 100
+def checkInATLAS(row, geometry, trackingOnly=False, decayVertex="decayVertex"):
+    # Transform to the Cavern Centre Coordinates and m
+    X, Y, Z = geometry.coordsToOrigin(row[decayVertex][0]*1E-3, row[decayVertex][1]*1E-3, row[decayVertex][2]*1E-3)
+    return geometry.inATLAS(X, Y, Z, trackingOnly)
 
-        # Calculate min/max for each axis
-        #data
-        #min_x, max_x = min(x_vals), max(x_vals)
-        #min_z, max_z = min(z_vals), max(z_vals)
-        #min_y, max_y = min(y_vals), max(y_vals)
-        #anubis
-        min_x, max_x = cav.CavernX[0] - 5, cav.CavernX[1] + 5
-        min_y, max_y = cav.CavernY[0] - 5, (cav.archRadius + cav.centreOfCurvature["y"]) + 5
-        min_z, max_z = cav.CavernZ[0] - 5, cav.CavernZ[1] + 5
+def checkIntersectionsWithANUBIS(row, geometry, decayVertex="decayVertex"):
+    # Transform to the Cavern Centre Coordinates and m
+    X, Y, Z = geometry.coordsToOrigin(row[decayVertex][0]*1E-3, row[decayVertex][1]*1E-3, row[decayVertex][2]*1E-3)
+    nInt, tempIntersections = geometry.intersectANUBISstationsSimple(X, Y, Z, geometry.ANUBIS_RPCs, verbose=False)
 
-        # Calculate bin widths
-        width_x = (max_x - min_x) / n_bins_x
-        width_y = (max_y - min_y) / n_bins_y
-        width_z = (max_z - min_z) / n_bins_z
+    intersections=[]
+    for tI in tempIntersections:
+        # Transforming back out of the Cavern Centre Coordinates and to mm
+        intersections.append(geometry.reverseCoordsToOrigin(tI[0]*1E3, tI[1]*1E3, tI[2]*1E3))
 
-        # Pad ranges by half a bin
-        range_x = [min_x - width_x / 2, max_x + width_x / 2]
-        range_y = [min_y - width_y / 2, max_y + width_y / 2]
-        range_z = [min_z - width_z / 2, max_z + width_z / 2]
+    return intersections
 
-        # Update hitBins dictionary
-        hitBins = {
-            "x": n_bins_x,
-            "y": n_bins_y,
-            "z": n_bins_z,
-            "widthX": width_x,
-            "widthY": width_y,
-            "widthZ": width_z,
-            "rangeX": range_x,
-            "rangeY": range_y,
-            "rangeZ": range_z
-        }  
-        failedHits = []
-        cav.plotFullCavern(ANUBISrpcs=[RPC_Pos1, RPC_Pos2, RPC_Pos3], plotATLAS=True, plotFailed=False, 
-                                    hits={"passed": passedHits, "failed": failedHits, "bins": hitBins}, suffix=f"_WithHits_with2interseciton") #{args.suffix}
-        #print(datetime.datetime.now())
-        """
-        plt.figure(figsize=(10,6))
-        cuteventeta = [e for e in eventeta if -15 <= e <= 15]
-        plt.hist(cuteventeta, bins=100, color='purple', alpha=0.75)
-        plt.xlabel("η (pseudorapidity)")
-        plt.ylabel("Number of hits")
-        plt.title("Pseudorapidity Distribution")
-        plt.grid(True)
-        plt.tight_layout()
-        plt.savefig("pseudorapidity_distribution.pdf")
-        plt.show()
+def checkChildrenIntersections(row, geometry, LLPchildren, nHits=2, requireCharge=True, decayVertex="decayVertex"):
+    tempChildren = LLPchildren[LLPchildren.LLPindex == row.name]
 
-        plt.figure(figsize=(10,6))
-        plt.hist(eventphi, bins=90, color='orange', alpha=0.75)
-        plt.xlabel("ϕ (phi) [radians]")
-        plt.ylabel("Number of hits")
-        plt.title("Azimuthal Angle (ϕ) Distribution")
-        plt.grid(True)
-        plt.tight_layout()
-        plt.savefig("phi_distribution.pdf")
-        plt.show()
-        """
+    tempChildren["intersectionsWithANUBIS"] = tempChildren.apply(checkIntersectionsWithANUBIS, args=(geometry, decayVertex), axis=1)
+    if requireCharge:
+        # Select Charged children
+        tempChildren = tempChildren[(tempChildren.charge != 0) & (tempChildren.charge != -0.555)] 
+
+    # Select LLP children with 2 or more intersections with ANUBIS stations i.e. 2 or more ANUBIS layers if there's no overlaps
+    childrenIntersect = tempChildren[tempChildren.apply(lambda row: len(row["intersectionsWithANUBIS"]) >=2, axis=1)]
+
+    # Return True to keep the LLP if there are more than {nHits} children that pass these requirements
+    passed = len(childrenIntersect) >= nHits
+    return passed 
+
+def performGeometryCut(LLPsSel, maxRadius, trackingOnly=False, geometry="", decayVertex="decayVertex"):
+    if geometry == "":
+        geometry = createGeometry("")
+    # Check LLP's decay vertex is in the Cavern Volume and within a maxRadius of the centre of curvature of the ceiling
+    LLPsInCavern = LLPsSel[LLPsSel.apply(checkInCavern, args=(geometry, maxRadius, decayVertex), axis=1)]
+    # Check that the LLP decay vertex is outside of the ATLAS detector
+    LLPsNotInATLAS = LLPsInCavern[~LLPsInCavern.apply(checkInATLAS, args=(geometry, trackingOnly, decayVertex), axis=1)]
+    # Check that the LLP direction would pass through at least two layers of the ANUBIS Detector
+    temp = LLPsNotInATLAS.apply(checkIntersectionsWithANUBIS, args=(geometry, decayVertex), axis=1)
+    if len(temp)!=0:
+        LLPsNotInATLAS["intersectionsWithANUBIS"] = LLPsNotInATLAS.apply(checkIntersectionsWithANUBIS, args=(geometry, decayVertex), axis=1)
+        LLPsIntersect = LLPsNotInATLAS[LLPsNotInATLAS.apply(lambda row: len(row["intersectionsWithANUBIS"]) >=2, axis=1)]
+    else:
+        LLPsIntersect=LLPsNotInATLAS
 
 
-    return filtered_df # return itself for now to be able to verify selection chain function
+    #for batch running with condor
+    #from the old version
+    from datetime import datetime
+    output_dir = "/usera/dp728/run_dir/output/HNL"
+    
+    #random id
+    import uuid
+
+    job_id = uuid.uuid4().hex[:6]
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H%M%S")
+
+    LLPsIntersect_filename  = f"{output_dir}/LLPsIntersect_{timestamp}_{job_id}.csv"
+    
+    LLPsIntersect.to_csv(LLPsIntersect_filename, index=False)
+    #np.save(f"{output_dir}/passedhits_{timestamp}_{job_id}.npy", passedHits)
+    #np.save(f"{output_dir}/allhits_{timestamp}_{job_id}.npy", allhits)
+    #np.save(f"{output_dir}/failedHits_{timestamp}_{job_id}.npy", failedHits)
+    #np.save(f"{output_dir}/passedevents_{timestamp}_{job_id}.npy", passedevents)
+
+    print("check'/asd./'sa'd'")
+
+    return LLPsIntersect
+
+def checkDecayHits(LLPsGeo, LLPchildren, nHits = 2, each=True, requireCharge=True, geometry="", decayVertex="decayVertex"):
+    if geometry == "":
+        geometry = createGeometry("")
+
+    LLPsDecayInANUBIS = LLPsGeo[LLPsGeo.apply(checkChildrenIntersections, args=(geometry, LLPchildren, nHits, requireCharge, decayVertex), axis=1)]
+
+    return LLPsDecayInANUBIS 
+
+def getMinDeltaR(row, sampleDFs, selection):
+    # Get the Associated Jets/charged tracks for the event.
+    dfBG = {"jet":  sampleDFs["finalStatePromptJets"][sampleDFs["finalStatePromptJets"].eventNumber == row["eventNumber"]],
+            "tracks": sampleDFs["chargedFinalStates"][sampleDFs["chargedFinalStates"].eventNumber == row["eventNumber"]]
+    }
+
+    minDeltaR = []
+    for BGtype in ["jet","tracks"]:
+        if len(dfBG[BGtype])!=0:
+            if BGtype == ["jet"]:
+                # Require a minimum jet momenta and pt
+                dfBG[BGtype] = dfBG[BGtype][(dfBG[BGtype].pt > selection["minPt"]["jet"]) & (dfBG[BGtype].p > selection["minP"]["jet"])]
+            else:
+                # Require a minimum pt for charged track
+                dfBG[BGtype] = dfBG[BGtype][dfBG[BGtype].pt > selection["minPt"]["chargedTrack"]]
+
+            dfBG[BGtype]["deltaEta"] = row.eta - dfBG[BGtype]["eta"] 
+            dfBG[BGtype]["deltaPhi"] = row.phi - dfBG[BGtype]["phi"] 
+            dfBG[BGtype]["deltaR"] = np.sqrt(np.power(dfBG[BGtype]["deltaEta"], 2) + np.power(dfBG[BGtype]["deltaPhi"], 2)) 
+            minDeltaR.append(dfBG[BGtype]["deltaR"].min())
+        else:
+            # If there are no associated Jets/Charged Tracks the isolation condition is automatically met.
+            #   - DeltaR can never be negative by our definition so use the -1 values to identify these cases.
+            minDeltaR.append(-1) 
+
+    return minDeltaR
+"""
+def findpartners(row,LLPsInATLAS,LLPsIsoAll,LLPs):
+
+
+    # Check if any LLP in the same event passed the isolation cut
+    same_event_passed = LLPsIsoAll[LLPsIsoAll["eventNumber"] == row["eventNumber"]]
+    if  same_event_passed.empty:
+        return False
+
+    # Check if the LLP is in ATLAS and satisfies the eta cut
+    in_atlas = (LLPsInATLAS["eventNumber"] == row["eventNumber"]) & (LLPsInATLAS.index == row.name)
+    if in_atlas.any():
+        eta = calculate_eta(row["px"], row["py"], row["pz"])
+        if abs(eta) < 1.5:
+            return True
+
+    return False
+    if LLPsIsoAll["eventNumber"] == row["eventNumber"]:
+        if row in LLPsIsoAll:
+            return True
+        elif row in LLPsInATLAS:
+            if calculate_eta(row["px"], row["py"], row["pz"]) < 1.5:    # pseudorapidity requirement
+                return True
+    return False
+
+
+def includepartners(LLPsInATLAS,LLPsIsoAll,LLPs)
+    LLPs=LLPs[LLPs.apply(findpartners, args=(LLPsInATLAS, LLPsIsoAll, LLPs), axis=1)]
+"""
+        
+def includeAtlasPartners(LLPsIsoAll, LLPsInATLAS):
+    # Get set of eventNumbers that hit anubis
+    passed_events = set(LLPsIsoAll["eventNumber"])
+
+    # Find partners that hit atlas
+    # pseudorapidiity condition
+    atlas_partners = LLPsInATLAS[
+        (LLPsInATLAS["eventNumber"].isin(passed_events)) &
+        (LLPsInATLAS["eta"].abs() < 1.5)
+    ]
+
+    # Combine the original passing LLPs with the newly included ATLAS partners
+    LLPsCombined = pd.concat([LLPsIsoAll, atlas_partners])
+
+    #checks event per llp
+    LLPsperEvent = LLPsCombined["eventNumber"].value_counts()
+    #list of all events with 2 llps
+    Eventswith2LLPS = LLPsperEvent[LLPsperEvent == 2].index
+    #filter original list to only keep ones with 2 llps
+    LLPsFinal = LLPsCombined[LLPsCombined["eventNumber"].isin(Eventswith2LLPS)]
+
+    return LLPsFinal
+
+
+    """
+    same_event_llps = LLPsIsoAll[LLPsIsoAll["eventNumber"] == row["eventNumber"]]
+    
+    # basically a mask for everthing u want
+    for _, other in same_event_llps.iterrows():
+        #
+        if other.name == row.name:
+            return True
+
+        #since all rows are done each LLP in the pair will be checked itself
+        #other LLP also in cut
+        #if other.name in LLPsIsoAll.index:
+        #    return True 
+
+        #other one in AtlAS
+        if other.name in LLPsInATLAS.index:
+            if calculate_eta(other["px"],other["py"],other["pz"]) < 1.5: #pseudorapidity requirement
+                return True
+    """
+    
+    

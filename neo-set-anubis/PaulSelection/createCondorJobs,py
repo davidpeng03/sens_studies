@@ -1,0 +1,64 @@
+import sys, os
+sys.path.append("/r04/atlas/pswallow/SensitivityStudies/neo-set-anubis/PaulSelection/")
+import helper as h
+import itertools as it
+import numpy as np
+
+# Process the Simulation Information table
+sampleInfoDicts = h.parseCSV("/usera/dp728/run_dir/samples_to_processDS.csv")
+
+def batch(x, bs):
+    return [x[i:i+bs] for i in range(0, len(x), bs)]
+
+phiFold=True
+nJobs = 2500
+samples = list(sampleInfoDicts.keys())
+sampleJobs = batch(samples, int(np.ceil(len(samples)/nJobs)) )
+print(sampleJobs[:3])
+print(sampleJobs[-1])
+print(len(samples))
+print(len(sampleJobs))
+input("...")
+
+bashString = """#!/bin/bash
+
+cd /r04/atlas/pswallow/SensitivityStudies/neo-set-anubis/PaulSelection/
+source setup.sh
+
+python selectLLPs.py --config configs/config_HNL_m1_c1.yaml"""
+
+for job in range(len(sampleJobs)):
+    if job==0: #Used for the test job
+        continue
+
+    jobDir = f"./jobscripts/job{job}"
+    if not os.path.exists(jobDir):
+        os.makedirs(jobDir)
+
+    # Create Bash script
+    bashScriptName = f"{jobDir}/runJob.sh" if not phiFold else f"{jobDir}/runJob_phiFolded.sh"
+    with open(bashScriptName,"w") as f:
+        tempString = bashString + f" --runID "
+        for IDs in sampleJobs[job]:
+            tempString+=f"{IDs} "
+        if phiFold:
+            tempString+="--phiFold"
+
+        f.write(tempString)
+
+    # Create condor submission script
+    condorString = f"executable = {bashScriptName}" + "\n"
+    condorString+= f"output = {jobDir}/job{job}_output.log" + "\n"
+    condorString+= f"error =  {jobDir}/job{job}_error.log" + "\n"
+    condorString+= f"log =  {jobDir}/job{job}_log.log" + "\n"
+    condorString+= "should_transfer_files = YES\n"
+    condorString+= "when_to_transfer_output = ON_EXIT_OR_EVICT\n"
+    condorString+= "Queue"
+    
+    condorSubmissionFile = f"{jobDir}/condor_submit.job"
+    with open(condorSubmissionFile,"w") as c:
+        c.write(condorString)
+
+    print(f"condor_submit {condorSubmissionFile}")
+    os.system(f"condor_submit {condorSubmissionFile}")
+

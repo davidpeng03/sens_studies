@@ -3,11 +3,14 @@
 # LLP Info
 llp_id: 35
 llp_type: "hs"
+seed: 35
 #
 # File Paths
 SimSwarmDir: "/usera/dp728/simulations"
-scanfile: "/usera/dp728/run_dir/samples_to_processDS.csv"
+scanFile: "/usera/dp728/run_dir/samples_to_processDS.csv"
 outputDir: "/usera/dp728/run_dir/output/"
+geometryPath: "/usera/dp728/run_dir/geometry/"
+
 #
 
 # Selections

@@ -2,12 +2,12 @@ import sys, os
 import numpy as np
 import matplotlib
 #matplotlib.use('Qt5Agg')
-matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 plt.ion()
 from sympy import Point3D, Line3D, Plane
 import json
 import pickle
+import helper as h
 
 #=========================================================#
 # NOTE: The ATLAS Coordinate system is assumed throughout #
@@ -22,17 +22,6 @@ class ATLASCavern():
     #   - ATFIU___0004: Side View (zy) of the ATLAS Cavern with the Access Shafts
 
     def __init__(self):
-        #===========================================================================================================================#
-        #===========================================================================================================================#
-        # NOTE: All coordinates, measurements and functions are assumed to be relative to the cavern centre coordinate system
-        #       If you use a different origin, e.g. in simulations, the positions must be converted before using these functions
-        #===========================================================================================================================#
-        #===========================================================================================================================#
-        # Define a default origin for given (x,y,z) points, relative to the centre of the Cavern
-        #   If instead you want to treat hits as coming from the IP, posOrigin = [IP["x"], IP["y"], IP["z"]]
-        #   Then for each (x,y,z) point, before using the associated functions use coordsToOrigin(x,y,z, posOrigin)
-        self.posOrigin = [0,0,0] 
-
         #=========================#
         #   Cavern Dimensions     #
         #=========================#
@@ -116,8 +105,6 @@ class ATLASCavern():
         self.ATLAS_Z = [-self.ATLAS_ZLength/2 - self.IP["z"], self.ATLAS_ZLength/2 - self.IP["z"]] #ATLAS Z min and max in metres relative to Cavern centre
         self.ATLAS_Centre = self.IP # ATLAS Centre coincides with the IP
 
-        self.ANUBIS_RPCs = []
-
     #------------------------------#
     #     Helper Functions         #
     #------------------------------#
@@ -129,18 +116,6 @@ class ATLASCavern():
     # Convert cartesian coordinates in terms of the IP to be in terms of the Cavern Centre instead
     def IPTocavernCentre(self, x, y, z):
         return (x - self.IP["x"], y - self.IP["y"], z - self.IP["z"])
-
-    # Generically convert position cartesian coordinates to the default origin and back
-    def coordsToOrigin(self, x, y, z, origin=[]):
-        if len(origin)==0:
-            origin = self.posOrigin # Use the default position origin
-        return (x + origin[0], y + origin[1], z + origin[2]) 
-
-    # Undos the cartesian shift to new origin. 
-    def reverseCoordsToOrigin(self, x, y, z, origin=[]):
-        if len(origin)==0:
-            origin = self.posOrigin # Use the default position origin
-        return (x - origin[0], y - origin[1], z - origin[2]) 
 
     # Convert cartestian coordinates to cylindrical coordinates, where the circular face is in xy
     def cartToCyl(self, x, y, z):
@@ -165,8 +140,7 @@ class ATLASCavern():
         z = r*np.cos(theta)
         return (x,y,z)
 
-    def onCeiling(self, x, y, z, origin=[]):
-        # 
+    def onCeiling(self, x, y, z):
         ceiling = np.power(x-self.centreOfCurvature["x"],2) + np.power(y-self.centreOFCurvature["y"],2)
         if (abs(self.archRadius - ceiling) < 0.01) and  (z > self.CavernZ[0] and z < self.CavernZ[1]):
             return (True, ceiling)
@@ -189,27 +163,19 @@ class ATLASCavern():
     #============================================================#
     # Function to Determine if a point lies in the ATLAS Cavern  #
     #============================================================#
-    def inCavern(self, x, y, z, maxRadius="", radiusOrigin=[],verbose=False): # x, y, z coordinates are relative to the Centre of the Cavern
+    def inCavern(self, x, y, z, maxRadius="", origin=[]):
         # Radius is assumed to be from the given origin (centre of curvature unless otherwise stated)
-        if len(radiusOrigin)==0:
-            radiusOrigin = (self.centreOfCurvature["x"], self.centreOfCurvature["y"], 0)
-
-        # Max radius is given to optionally restrict "Cavern Area" to within a smaller radius of the centre of curvature
-        # In particular since the ANUBIS vertexing limit is ~50cm below the closest tracking station to the IP.
+        # changing Radius to be IP point
+        if len(origin)==0:
+            origin = (self.centreOfCurvature["x"], self.centreOfCurvature["y"], 0)
+            #origin = (self.IP["x"], self.IP["y"], self.IP["z"])
         if maxRadius=="":
             radialAcceptance=True # No radius considered
+
         else:
             # Radial distance in cylindrical coordinates relative to the given origin
-            r = np.linalg.norm( (x - radiusOrigin[0], y - radiusOrigin[1]) )
+            r = np.linalg.norm( (x - origin[0], y - origin[1]) )
             radialAcceptance = r < maxRadius
-
-        if verbose:
-            print(f"Hit: ({x},{y},{z})")
-            print(f"Radius Origin: {radiusOrigin}")
-            print(f"RadialAcceptance: {radialAcceptance}")
-            print(f"In X [{self.CavernX[0]},{self.CavernX[1]}: {(x > self.CavernX[0] and x < self.CavernX[1])}")
-            print(f"In Y [{self.CavernY[0]},{self.CavernY[1]}: {(y > self.CavernY[0] and y < self.CavernY[1])}")
-            print(f"In Z [{self.CavernZ[0]},{self.CavernZ[1]}: {(z > self.CavernZ[0] and z < self.CavernZ[1])}")
 
         #Assume x, y, z provided relative to the Cavern Centre
         if ((x > self.CavernX[0] and x < self.CavernX[1]) and #Within X Dimensions
@@ -221,27 +187,26 @@ class ATLASCavern():
         else:
             return False
 
-    def inATLAS(self, x, y, z, trackingOnly=False, verbose=False): 
-        #Assume x, y, z provided relative to the Cavern Centre
-        # Radial distance in cylindrical coordinates relative to the cavern centre
+    def inATLAS(self, x, y, z, trackingOnly=False, origin=[], verbose=False):
+        #Assume x, y, z provided relative to the Cavern Centre otherwise use the given origin
+        if len(origin)==0:
+            origin = (self.IP["x"], self.IP["y"], self.IP["z"])
+
+        # Radial distance in cylindrical coordinates relative to the given origin
         #   - ATLAS is defined as a cylinder with a defined radius here.
-        r = np.linalg.norm( (x - self.IP["x"], y - self.IP["y"]) )
+        r = np.linalg.norm( (x - origin[0], y - origin[1]) )
 
         if trackingOnly:
             rTarget = self.radiusATLAStracking #Effective vertexing radius
         else:
             rTarget = self.radiusATLAS # Entire ATLAS Envelope
 
-        if verbose:
-            print(f"r: {r} | rTarget: {rTarget} | {r<rTarget}")
-            print(f"z: {z} | Z in ({self.ATLAS_Z[0]},{self.ATLAS_Z[1]}) | {(z > self.ATLAS_Z[0] and z < self.ATLAS_Z[1])}") 
-
         if ( (r < rTarget) and (z > self.ATLAS_Z[0] and z < self.ATLAS_Z[1]) ):
             return True
         else:
             return False
 
-    def intersectANUBISstations(self, x, y, z, ANUBISstations, origin=[], verbose=False):
+    def intersectANUBISstations(self, x, y, z, ANUBISstations, origin=[]):
         # (x,y,z) is the position of a particle
         # ANUBISstations is a dictionary of RPCs, with a list of: 
         #   - "corners": The (x,y,z) positions of its 8 corners,
@@ -250,7 +215,6 @@ class ATLASCavern():
         #   - "LayerID" and "RPCid": which combine to form a unique ID to identify it
         # Origin allows the origin of the particle (x,y,z) to be set to determine its direction. If empty, assumed to originate from IP
         
-        # Assume (x,y,z) and the origin position are provided relative to the cavern centre
         if len(origin)==0:
             origin = (self.IP["x"], self.IP["y"], self.IP["z"])
 
@@ -279,7 +243,12 @@ class ATLASCavern():
                         nIntersections+=1
 
         return nIntersections, intersections
-
+    #select lps uses
+    # phi - x y angle
+    # eta = y z angle
+    #
+    #
+    #
     def intersectANUBISstationsSimple(self, x, y, z, ANUBISstations, origin=[], verbose=False):
         # (x,y,z) is the position of a particle
         # Origin allows the origin of the particle (x,y,z) to be set to determine its direction. If empty, assumed to originate from IP
@@ -288,11 +257,12 @@ class ATLASCavern():
         #   - "theta": List of [minTheta, maxTheta] (Representing the start and end of the chambers in angular coverage.
         #   - "phi": List of [minPhi, maxPhi]
         
-        # Assume (x,y,z) and the origin position are provided relative to the cavern centre
         if len(origin)==0:
             origin = (self.IP["x"], self.IP["y"], self.IP["z"])
+            #x,y,z = self.cavernCentreToIP(x, y, z)
 
         r, theta, phi = self.cartToSph(x - origin[0], y - origin[1], z - origin[2])
+        #direction = Line3D(Point3D(origin), Point3D((x,y,z)))
         # Get the radial distance relative to the centre of curvature.
         radialDist = np.linalg.norm( ( x - self.centreOfCurvature["x"], y - self.centreOfCurvature["y"]))
 
@@ -303,36 +273,77 @@ class ATLASCavern():
         intersections=[]
         for i in range(len(ANUBISstations["r"])):
             if verbose:
-                print(f"Station {i}: (r,theta,phi): ({ANUBISstations['r'][i]},{ANUBISstations['phi']['IP'][i]},{ANUBISstations['theta']['IP'][i]})")
+                print(f"Station {i}: (r,theta,phi): ({ANUBISstations['r'][i]},{ANUBISstations['phi'][i]},{ANUBISstations['theta'][i]})")
                 print(f"\t r Requirement: {radialDist > ANUBISstations['r'][i][1]}")
-                print(f"\t phi Requirement: {( (ANUBISstations['phi']['IP'][i][0] < phi) and (phi < ANUBISstations['phi']['IP'][i][1]))}")
-                print(f"\t theta Requirement: {((ANUBISstations['theta']['IP'][i][0] < theta) and (theta < ANUBISstations['theta']['IP'][i][1]))}")
+                print(f"\t phi Requirement: {( (ANUBISstations['phi'][i][0] < phi) and (phi < ANUBISstations['phi'][i][1]))}")
+                print(f"\t theta Requirement: {((ANUBISstations['theta'][i][0] < theta) and (theta < ANUBISstations['theta'][i][1]))}")
 
-            if radialDist > ANUBISstations["r"][i][1]: # ANUBIS r limits are in cylindrical coordinates relative to the Centre of Curvature
+            if radialDist > ANUBISstations["r"][i][1]: # ANUBIS r limits are in cylindrical coordinates
                 if verbose:
                     print(f"Skipping Station...")
                 continue
-            if ( ( (ANUBISstations["phi"]["IP"][i][0] < phi) and (phi < ANUBISstations["phi"]["IP"][i][1]) ) and
-                 ( (ANUBISstations["theta"]["IP"][i][0] < theta) and (theta < ANUBISstations["theta"]["IP"][i][1]) )):
+            if ( ( (ANUBISstations["phi"][i][0] < phi) and (phi < ANUBISstations["phi"][i][1]) ) and
+                 ( (ANUBISstations["theta"][i][0] < theta) and (theta < ANUBISstations["theta"][i][1]) )):
                  intersections.append(self.sphToCart(ANUBISstations["r"][i][0],theta,phi))
                  nIntersections+=1
 
         return nIntersections, intersections
 
+    def intersectANUBISstationsSimple2(self,x,y,z, r, theta, phi, ANUBISstations, origin=[], verbose=False):
+        # (x,y,z) is the position of a particle
+        # Origin allows the origin of the particle (x,y,z) to be set to determine its direction. If empty, assumed to originate from IP
+        # ANUBISstations is a dictionary of a list of RPC layers represented by spherical shells, containing:
+        #   - "r": List of [minRadius, maxRadius] (Representing the thickness of an RPC layer) relative to the centre of curvature.
+        #   - "theta": List of [minTheta, maxTheta] (Representing the start and end of the chambers in angular coverage.
+        #   - "phi": List of [minPhi, maxPhi]
+        
+        if len(origin)==0:
+            origin = (self.IP["x"], self.IP["y"], self.IP["z"])
+            #x,y,z = self.cavernCentreToIP(x, y, z)
+
+        #r, theta, phi = self.cartToSph(x - origin[0], y - origin[1], z - origin[2])
+        #direction = Line3D(Point3D(origin), Point3D((x,y,z)))
+        # Get the radial distance relative to the centre of curvature.
+        #radialDist = np.linalg.norm( ( x - self.centreOfCurvature["x"], y - self.centreOfCurvature["y"]))
+        radialDist = np.linalg.norm( (x - origin[0], y - origin[1]))
+
+        if verbose:
+            print(f"(X,Y,Z): ({x},{y},{z}), (r,theta,phi): ({r},{theta},{phi})")
+        
+        nIntersections=0
+        intersections=[]
+        for i in range(len(ANUBISstations["r"])):
+            if verbose:
+                print(f"Station {i}: (r,theta,phi): ({ANUBISstations['r'][i]},{ANUBISstations['phi'][i]},{ANUBISstations['theta'][i]})")
+                print(f"\t r Requirement: {radialDist > ANUBISstations['r'][i][1]}")
+                print(f"\t phi Requirement: {( (ANUBISstations['phi'][i][0] < phi) and (phi < ANUBISstations['phi'][i][1]))}")
+                print(f"\t theta Requirement: {((ANUBISstations['theta'][i][0] < theta) and (theta < ANUBISstations['theta'][i][1]))}")
+
+            if radialDist > ANUBISstations["r"][i][1]: # ANUBIS r limits are in cylindrical coordinates
+                if verbose:
+                    print(f"Skipping Station...")
+                continue
+            if ( ( (ANUBISstations["phi"][i][0] < phi) and (phi < ANUBISstations["phi"][i][1]) ) and
+                 ( (ANUBISstations["theta"][i][0] < theta) and (theta < ANUBISstations["theta"][i][1]) )):
+                 intersections.append(self.sphToCart(ANUBISstations["r"][i][0],theta,phi))
+                 nIntersections+=1
+
+        return nIntersections, intersections
+    
     def SolidAngle(self, a, b, d):
         # Solid Angle of a rectangular Pyramid (See https://vixra.org/pdf/2001.0603v2.pdf, equation 27)
         alpha = a / (2*d)
         beta = b / (2*d)
         return 4*np.arctan( (alpha*beta) / np.sqrt(1 + alpha**2 + beta**2)) #sr
 
-    def calculateAngles(self, relToCentre=False, verbose=True):
+    def calculateAngles(self, relToCentre=False):
         # All Angles calculated relative to the IP unless relToCentre specified, then done relative to Cavern Centre
         if relToCentre:
             refX, refY, refZ = self.centreOfCurvature["x"], self.centreOfCurvature["y"], 0
-            if verbose: print("Angles are being calculated relative to the Cavern Centre...")
+            print("Angles are being calculated relative to the Cavern Centre...")
         else:
             refX, refY, refZ = self.IP["x"], self.IP["y"], self.IP["z"]
-            if verbose: print("Angles are being calculated relative to the IP...")
+            print("Angles are being calculated relative to the IP...")
 
         # Phi in ATLAS coords (XY) relative to the x axis, phi=0 at y=0, +ve x and increases anti-clockwise
         phi=[]
@@ -360,8 +371,7 @@ class ATLASCavern():
         b = self.CavernXLength
         d = self.archRadius + self.centreOfCurvature["y"]
         # On Axis case: solidAngle = self.SolidAngle(a,b,d)
-        if verbose:
-            print(f"On Axis SolidAngle: {self.SolidAngle(a,b,d)}")
+        print(f"On Axis SolidAngle: {self.SolidAngle(a,b,d)}")
         # IP is Off-axis of the centre of the projected rectangle of the ceiling, 
         # use A and B to scale as in https://vixra.org/pdf/2001.0603v2.pdf, equation 34
         A = self.CavernZLength/2 
@@ -467,139 +477,9 @@ class ATLASCavern():
 
         return {"corners": corners, "midPoint": midPoints, "LayerID": layerIDs, "RPCid": RPCIDs, "plane": planes} 
 
-    from _plotGeometry import plotCavernXY, plotCavernXZ, plotCavernZY, plotCavern3D, plotRPCsXY, plotRPCsXZ, plotRPCsZY, plotRPCs3D,\
-                              plotSimpleRPCsXY, plotHitsHist, plotHitsScatter 
-
-    # Plot all features of the ATLAS Cavern, plus additional features if provided: e.g. ANUBIS.
-    def plotFullCavern(self, hits={}, anubisRPCs=[], simpleAnubisRPCs=[], plotRPCs={"xy": True, "xz": False, "zy": False, "3D": False},
-                             ranges={"xy": {}, "xz": {}, "zy": {}, "3D": {}}, plotFailed=True, plotATLAS=False, plotAcceptance=False, 
-                             suffix="", outDir="./plots"):
-        if len(hits)!=0:
-            failedHits={"x": [x[0] for x in hits["failed"]],
-                        "y": [y[1] for y in hits["failed"]],
-                        "z": [z[2] for z in hits["failed"]], 
-            }
-            passedHits={"x": [x[0] for x in hits["passed"]],
-                        "y": [y[1] for y in hits["passed"]],
-                        "z": [z[2] for z in hits["passed"]], 
-            }
-
-        #XY
-        fig, ax = plt.subplots(1, figsize=(10, 16), dpi=100)
-        self.plotCavernXY(ax, plotATLAS=plotATLAS, plotAcceptance=plotAcceptance) 
-        if len(simpleAnubisRPCs)!=0 and plotRPCs["xy"]:
-            self.plotSimpleRPCsXY(ax, simpleAnubisRPCs)
-        if len(anubisRPCs)!=0 and plotRPCs["xy"]:
-            self.plotRPCsXY(ax, anubisRPCs)
-        if len(hits)!=0:
-            counts, xedges, yedges, im = ax.hist2d(passedHits["x"], passedHits["y"], 
-                                                  range=(hits["bins"]["rangeX"],hits["bins"]["rangeY"]), bins = (hits["bins"]["nX"], hits["bins"]["nY"]), cmin=1)
-            cbar = plt.colorbar(im, fraction=0.046, pad=0.04, ax=ax)
-            if plotFailed:
-                ax.scatter(failedHits["x"], failedHits["y"], c="r", marker="x")
-
-        plt.xlabel(f"x /m")
-        plt.ylabel(f"y /m")
-        plt.title("ATLAS Cavern")
-        if len(ranges["xy"])==0:
-            ax.set_xlim(-18,18)
-            ax.set_ylim(-15,25)
-            plt.savefig(f"{outDir}/ATLASCavern_XY_withShafts{suffix}.pdf", bbox_inches="tight")
-            plt.gca().set_aspect('equal')
-            ax.set_ylim(top=24)
-            plt.savefig(f"{outDir}/ATLASCavern_XY{suffix}.pdf", bbox_inches="tight")
-            ax.set_xlim(-16,-5)
-            ax.set_ylim(10,20)
-            plt.gca().set_aspect('auto')
-            plt.savefig(f"{outDir}/ATLASCavern_XY_Zoomed{suffix}.pdf", bbox_inches="tight")
-        else:
-            ax.set_xlim(ranges["xy"]["x"])
-            ax.set_ylim(ranges["xy"]["y"])
-            plt.gca().set_aspect('auto')
-            plt.savefig(f"{outDir}/ATLASCavern_XY{suffix}.pdf", bbox_inches="tight")
-        plt.close(fig)
-
-        #XZ
-        fig2, ax2 = plt.subplots(1, figsize=(14, 14), dpi=100)
-        if len(hits)!=0:
-            counts2, xedges2, yedges2, im2 = ax2.hist2d(passedHits["x"], passedHits["z"],
-                                                  range=(hits["bins"]["rangeX"],hits["bins"]["rangeZ"]), bins = (hits["bins"]["nX"], hits["bins"]["nZ"]), cmin=1)
-            cbar = plt.colorbar(im2, fraction=0.046, pad=0.04, ax=ax2)
-            if plotFailed:
-                ax2.scatter(failedHits["x"], failedHits["y"], c="r", marker="x")
-        
-        self.plotCavernXZ(ax2, plotATLAS=plotATLAS) 
-        if len(anubisRPCs)!=0 and plotRPCs["xz"]:
-            self.plotRPCsXZ(ax2, anubisRPCs)
-
-        plt.xlabel(f"x /m")
-        plt.ylabel(f"z /m")
-        plt.title("ATLAS Cavern")
-        if len(ranges["xz"])==0:
-            ax2.set_xlim(-18,18)
-            ax2.set_ylim(-30,30)
-        else: 
-            ax2.set_xlim(ranges["xz"]["x"])
-            ax2.set_ylim(ranges["xz"]["z"])
-        plt.gca().set_aspect('auto')
-        plt.savefig(f"{outDir}/ATLASCavern_XZ{suffix}.pdf", bbox_inches="tight")
-        plt.close(fig2)
-
-        #ZY
-        fig3, ax3 = plt.subplots(1, figsize=(16, 10), dpi=100)
-        self.plotCavernZY(ax3, plotATLAS=plotATLAS, plotAcceptance=plotAcceptance) 
-        if len(anubisRPCs)!=0 and plotRPCs["zy"]:
-            self.plotRPCsZY(ax3, anubisRPCs)
-        if len(hits)!=0:
-            counts3, xedges3, yedges3, im3 = ax3.hist2d(passedHits["z"], passedHits["y"],
-                                                  range=(hits["bins"]["rangeZ"],hits["bins"]["rangeY"]), bins = (hits["bins"]["nZ"], hits["bins"]["nY"]), cmin=1)
-            cbar3 = plt.colorbar(im3, fraction=0.046, pad=0.04, ax=ax3)
-            if plotFailed:
-                ax3.scatter(failedHits["z"], failedHits["y"], c="r", marker="x")
-        plt.xlabel(f"z /m")
-        plt.ylabel(f"y /m")
-        plt.title("ATLAS Cavern")
-        if len(ranges["zy"])==0:
-            ax3.set_xlim(-30,30)
-            ax3.set_ylim(-15,25)
-        else:
-            ax3.set_xlim(ranges["zy"]["z"])
-            ax3.set_ylim(ranges["zy"]["y"])
-        plt.gca().set_aspect('auto')
-        plt.savefig(f"{outDir}/ATLASCavern_ZY{suffix}.pdf", bbox_inches="tight")
-        plt.close(fig3)
-
-        #3D Plot
-        fig4, ax4 = plt.subplots(subplot_kw={"projection": "3d"})
-        self.plotCavern3D(ax4, plotATLAS=plotATLAS, plotAcceptance=plotAcceptance) 
-        if len(anubisRPCs)!=0 and plotRPCs["3D"]:
-            self.plotRPCs3D(ax4, anubisRPCs)
-        if len(hits)!=0:
-            ax4.scatter(passedHits["x"], passedHits["y"], passedHits["z"], c="lime", marker="^")
-            if plotFailed:
-                ax4.scatter(passedHits["x"], passedHits["y"], passedHits["z"], c="red", marker="x")
-        ax4.set_xlabel("x /m")
-        ax4.set_ylabel("y /m")
-        ax4.set_zlabel("z /m")
-        plt.tight_layout()
-        """
-        if len(ranges["3D"])==0:
-            ax4.set_xlim(-30,30)
-            ax4.set_ylim(-30,30)
-            ax4.set_zlim(-30,30)
-        else:
-            ax4.set_xlim(ranges["3D"]["x"])
-            ax4.set_ylim(ranges["3D"]["z"])
-            ax4.set_zlim(ranges["3D"]["y"])
-        """
-        plt.savefig(f"{outDir}/ATLASCavern_XYZ{suffix}.pdf")
-        plt.close(fig4)
-        
-
-    """
     # Plot all features of the ATLAS Cavern, plus additional features if provided: e.g. ANUBIS.
     def plotFullCavern(self, hits={}, ANUBISrpcs=[], plotRPCs={"xy": True, "xz": False, "zy": False, "3D": False},
-                             plotFailed=True, plotATLAS=False, suffix="", outDir="./plots"):
+                             plotFailed=True, plotATLAS=False, suffix="", outDir="/usera/dp728/run_dir/plots"):
         # ANUBISrpcs is a list of RPClayers, each contain a list of RPCs in the format:
         #   - "corners": 8 (x,y,z) coordinates corresponding to their corners,
         #   - "midPoint": The midPoint of the RPC in (x,y,z), 
@@ -627,6 +507,8 @@ class ATLASCavern():
                     tempSuffix[label]+=f"_withANUBIS_{len(ANUBISrpcs)}Layers"
 
         #XY
+        from matplotlib.colors import LogNorm
+
         fig, ax = plt.subplots(1, figsize=(10, 16), dpi=100)
         # Plot x,y positions of hits that pass and fail geometric acceptance.
         if len(hits)!=0:
@@ -634,7 +516,8 @@ class ATLASCavern():
                 ax.scatter([x[0] for x in hits["failed"]], [y[1] for y in hits["failed"]], c="red", marker="x")
             #ax.scatter([x[0] for x in hits["passed"]], [y[1] for y in hits["passed"]], c="lime", marker="^")
             counts, xedges, yedges, im = ax.hist2d([x[0] for x in hits["passed"]], [y[1] for y in hits["passed"]], 
-                                                   range=(hits["bins"]["rangeX"],hits["bins"]["rangeY"]), bins = (hits["bins"]["x"], hits["bins"]["y"]), cmin=1)
+                                                   range=(hits["bins"]["rangeX"],hits["bins"]["rangeY"]), bins = (hits["bins"]["x"], hits["bins"]["y"]), cmin=1,
+        norm=LogNorm(vmin=1, vmax=1000) )
             cbar = plt.colorbar(im, fraction=0.046, pad=0.04)
             # Plot a rough impression of the Acceptance
             ax.plot([self.IP["x"], self.CavernX[0]], [self.IP["y"], self.CavernY[1]], c="k", alpha=0.25, linestyle="--")
@@ -682,30 +565,29 @@ class ATLASCavern():
             
             # Naive envelopes
             ax.add_patch( matplotlib.patches.Arc((self.centreOfCurvature["x"], self.centreOfCurvature["y"]),
-                                                width = 2*(self.archRadius-0.2), height = 2*(self.archRadius-0.2), 
+                                                width = 2*(self.archRadius), height = 2*(self.archRadius), 
                                                 theta1=min(self.angles["theta"])*(180/np.pi), theta2=max(self.angles["theta"])*(180/np.pi),
                                                 color=LayerColours[0], fill=False, ls="--") )
             ax.add_patch( matplotlib.patches.Arc((self.centreOfCurvature["x"], self.centreOfCurvature["y"]),
-                                                width = 2*(self.archRadius-0.2-0.06), height = 2*(self.archRadius-0.2-0.06),
+                                                width = 2*(self.archRadius-0.06), height = 2*(self.archRadius-0.06),
                                                 theta1=min(self.angles["theta"])*(180/np.pi), theta2=max(self.angles["theta"])*(180/np.pi),
                                                 color=LayerColours[0], fill=False, ls="--") )
 
             ax.add_patch( matplotlib.patches.Arc((self.centreOfCurvature["x"], self.centreOfCurvature["y"]),
-                                                width = 2*(self.archRadius-0.6), height = 2*(self.archRadius-0.6),
+                                                width = 2*(self.archRadius-0.4), height = 2*(self.archRadius-0.4),
                                                 theta1=min(self.angles["theta"])*(180/np.pi), theta2=max(self.angles["theta"])*(180/np.pi),
                                                 color=LayerColours[1], fill=False, ls="--") )
             
             ax.add_patch( matplotlib.patches.Arc((self.centreOfCurvature["x"], self.centreOfCurvature["y"]),
-                                                width =2*(self.archRadius-0.6-0.06), height = 2*(self.archRadius-0.6-0.06),
+                                                width =2*(self.archRadius-0.4-0.06), height = 2*(self.archRadius-0.4-0.06),
                                                 theta1=min(self.angles["theta"])*(180/np.pi), theta2=max(self.angles["theta"])*(180/np.pi),
                                                 color=LayerColours[1], fill=False, ls="--") )
 
-            ax.add_patch( matplotlib.patches.Arc((self.centreOfCurvature["x"], self.centreOfCurvature["y"]),
-                                                width = 2*(self.archRadius-1.2), height = 2*(self.archRadius-1.2),
+            ax.add_patch( matplotlib.patches.Arc((self.centreOfCurvature["x"], self.centreOfCurvature["y"]),width = 2*(self.archRadius-1), height = 2*(self.archRadius-1),
                                                 theta1=min(self.angles["theta"])*(180/np.pi), theta2=max(self.angles["theta"])*(180/np.pi),
                                                 color=LayerColours[2], fill=False, ls="--") )
             ax.add_patch( matplotlib.patches.Arc((self.centreOfCurvature["x"], self.centreOfCurvature["y"]),
-                                                width = 2*(self.archRadius-1.2-0.06), height = 2*(self.archRadius-1.2-0.06),
+                                                width = 2*(self.archRadius-1-0.06), height = 2*(self.archRadius-1-0.06),
                                                 theta1=min(self.angles["theta"])*(180/np.pi), theta2=max(self.angles["theta"])*(180/np.pi),
                                                 color=LayerColours[2], fill=False, ls="--") )
 
@@ -779,14 +661,15 @@ class ATLASCavern():
                     ax.plot( [c[1][0], c[3][0]], [c[1][2],c[3][2]], c=LayerColours[nLayer], label=f"Layer {nLayer}")
                 nLayer+=1
 
-        if plotATLAS:
+        if plotATLAS: #xz coordinates for atlas
             ax.plot( [self.ATLAS_Centre["x"]-self.radiusATLAS,self.ATLAS_Centre["x"]+self.radiusATLAS], [self.ATLAS_Z[0],self.ATLAS_Z[0]], c="gray")
-            ax.plot( [self.ATLAS_Centre["x"]-self.radiusATLAS,self.ATLAS_Centre["x"]-self.radiusATLAS], [self.ATLAS_Z[0],self.ATLAS_Z[1]], c="gray")
-            ax.plot( [self.ATLAS_Centre["x"]-self.radiusATLAS,self.ATLAS_Centre["x"]+self.radiusATLAS], [self.ATLAS_Z[1],self.ATLAS_Z[1]], c="gray")
-            ax.plot( [self.ATLAS_Centre["x"]+self.radiusATLAS,self.ATLAS_Centre["x"]+self.radiusATLAS], [self.ATLAS_Z[0],self.ATLAS_Z[1]], c="gray")
+            ax.plot( [self.ATLAS_Centre["x"]-self.radiusATLAS,self.ATLAS_Centre["x"]-self.radiusATLAS], [self.ATLAS_Z[0],self.ATLAS_Z[1]], c="blue")
+            ax.plot( [self.ATLAS_Centre["x"]-self.radiusATLAS,self.ATLAS_Centre["x"]+self.radiusATLAS], [self.ATLAS_Z[1],self.ATLAS_Z[1]], c="green")
+            #ax.plot( [self.ATLAS_Centre["x"]-self.radiusATLAS,self.ATLAS_Centre["x"]-self.radiusATLAS], [self.ATLAS_Z[0],self.ATLAS_Z[1]], c="gray")
+            ax.plot( [self.ATLAS_Centre["x"]+self.radiusATLAS,self.ATLAS_Centre["x"]+self.radiusATLAS], [self.ATLAS_Z[0],self.ATLAS_Z[1]], c="red")
 
-        ax.set_xlim(-25,25)
-        ax.set_ylim(-25,25)
+        #ax.set_xlim(-25,25)
+        #ax.set_ylim(-25,25)
         plt.xlabel(f"x /m")
         plt.ylabel(f"z /m")
         plt.title("ATLAS Cavern")
@@ -849,10 +732,10 @@ class ATLASCavern():
                 nLayer+=1
 
         if plotATLAS:
-            ax.plot( [self.ATLAS_Z[0],self.ATLAS_Z[0]], [self.ATLAS_Centre["y"]-self.radiusATLAS,self.ATLAS_Centre["y"]+self.radiusATLAS], c="gray")
-            ax.plot( [self.ATLAS_Z[0],self.ATLAS_Z[1]], [self.ATLAS_Centre["y"]-self.radiusATLAS,self.ATLAS_Centre["y"]-self.radiusATLAS], c="gray")
-            ax.plot( [self.ATLAS_Z[1],self.ATLAS_Z[1]], [self.ATLAS_Centre["y"]-self.radiusATLAS,self.ATLAS_Centre["y"]+self.radiusATLAS], c="gray")
-            ax.plot( [self.ATLAS_Z[1],self.ATLAS_Z[1]], [self.ATLAS_Centre["y"]-self.radiusATLAS,self.ATLAS_Centre["y"]-self.radiusATLAS], c="gray")
+            ax.plot( [self.ATLAS_Z[0],self.ATLAS_Z[0]], [self.ATLAS_Centre["y"]-self.radiusATLAS,self.ATLAS_Centre["y"]+self.radiusATLAS], c="grey")
+            ax.plot( [self.ATLAS_Z[0],self.ATLAS_Z[1]], [self.ATLAS_Centre["y"]-self.radiusATLAS,self.ATLAS_Centre["y"]-self.radiusATLAS], c="grey")
+            ax.plot( [self.ATLAS_Z[1],self.ATLAS_Z[1]], [self.ATLAS_Centre["y"]-self.radiusATLAS,self.ATLAS_Centre["y"]+self.radiusATLAS], c="grey")
+            ax.plot( [self.ATLAS_Z[0],self.ATLAS_Z[1]], [self.ATLAS_Centre["y"]+self.radiusATLAS,self.ATLAS_Centre["y"]+self.radiusATLAS], c="gray")
 
         plt.xlabel(f"z /m")
         plt.ylabel(f"y /m")
@@ -944,7 +827,7 @@ class ATLASCavern():
         plt.tight_layout()
         plt.savefig(f"{outDir}/ATLASCavern_XYZ{tempSuffix['3D']}.pdf")
         plt.close()
-    """
+
 
 
     def ANUBIS_RPC_positions(self, RPCx=1, RPCy=0.06, RPCz=1.8, overlapAngleXY=0, overlapZ=0, startTheta=-999, layerRadius=0, ID=0):
@@ -1096,39 +979,32 @@ class ATLASCavern():
                 RPCs.append( {"corners": corners, "midPoint": midPoint, "plane": plane, "RPCid": rpcID, "LayerID": ID} )
                 rpcID+=1
 
-        self.ANUBIS_RPCs = RPCs
-
         return RPCs
 
     def createSimpleRPCs(self, radii, RPCthickness=0.06, origin=[]):
+        cav = ATLASCavern()
         if len(origin)==0: # Assume origin of IP unless otherwise stated
             origin = (self.IP["x"], self.IP["y"], self.IP["z"])
 
-        # Save the RPC angular coverage both relative to the IP and the Centre of Curvature (CoC) 
-        RPCs={"r": [], "theta": {"CoC": [], "IP": []}, "phi": {"CoC": [], "IP": []}}
+        RPCs={"r": [], "theta": [], "phi": []}
 
         # Radii are assumed to be relative to the centre of curvature
-        tempAngles={}
-        tempAngles["CoC"] = self.calculateAngles(relToCentre=True, verbose=False)
-        tempAngles["IP"] = self.calculateAngles(relToCentre=False, verbose=False)
         for r in radii:
             RPCs["r"].append( [r - RPCthickness, r] )
-            for angleRef in ["CoC", "IP"]:
-                RPCs["theta"][angleRef].append([min(tempAngles[angleRef]["theta"]), max(tempAngles[angleRef]["theta"])])
-
-                if r < abs(self.CavernX[0]-origin[0]):
-                    RPCs["phi"][angleRef].append([0,2*np.pi]) # As in this case you get a circle within the ATLAS Cavern
-                else:
-                    phiList=[]
-                    for i in [1,0]:
-                        vec1 = self.createVector([self.CavernX[i],np.sqrt((r**2) - (self.CavernX[i] **2))], [origin[0], origin[1]])
-                        vec2 = self.createVector([self.CavernX[1], origin[1]], [origin[0], origin[1]])
-                        tempPhi = np.dot(vec1, vec2) / ( np.linalg.norm(vec1) * np.linalg.norm(vec2))
-                        phiList.append(np.arccos(np.clip(tempPhi, -1, 1))) # In radians
-                    
-                    RPCs["phi"][angleRef].append(phiList)
-
-        self.ANUBIS_RPCs = RPCs
+            #RPCs["theta"].append([min(cav.angles["theta"]), max(cav.angles["theta"])])
+            RPCs["theta"].append([min(self.angles["theta"]), max(self.angles["theta"])])
+            
+            if r < abs(self.CavernX[0]-origin[0]):
+                RPCs["phi"].append([0,2*np.pi]) # As in this case you get a circle within the ATLAS Cavern
+            else:
+                phiList=[]
+                for i in [1,0]:
+                    vec1 = self.createVector([self.CavernX[i],np.sqrt((r**2) - (self.CavernX[i] **2))], [origin[0], origin[1]])
+                    vec2 = self.createVector([self.CavernX[1], origin[1]], [origin[0], origin[1]])
+                    tempPhi = np.dot(vec1, vec2) / ( np.linalg.norm(vec1) * np.linalg.norm(vec2))
+                    phiList.append(np.arccos(np.clip(tempPhi, -1, 1))) # In radians
+                
+                RPCs["phi"].append(phiList)
 
         return RPCs
 
@@ -1139,11 +1015,14 @@ if __name__=="__main__":
     parser = argparse.ArgumentParser(description='Provide an input file')
     parser.add_argument('--remake', action='store_true')
     parser.add_argument('--suffix', type=str, default="")
+    parser.add_argument('--hitfile', type=str, help='Path to CSV file with hits')
+    # FourVector is x, y, z, t - in mm and s
     args = parser.parse_args()
 
     print(datetime.datetime.now())
+
     cav = ATLASCavern()
-    #cav.createCavernVault()
+    cav.createCavernVault()
 
     print(f"Cavern Bounds: {cav.CavernBounds}")
     print(f"Cavern Corners: {cav.CavernCorners}")
@@ -1151,13 +1030,11 @@ if __name__=="__main__":
     print(f"Centre of Curvature: {cav.centreOfCurvature}")
     print(cav.angles)
 
-    cav.plotFullCavern(plotATLAS=True, plotAcceptance=True, plotFailed=False, suffix=f"{args.suffix}")
-
     # Create ANUBIS RPC Layers
     #   - Afterwards save to a pickle file. 
     #   - Reload RPCs from pickle file if it exists.
 
-    pickleDir = "./pickles"
+    pickleDir = "/usera/dp728/run_dir/pickles"
     if not os.path.exists(pickleDir):
         os.makedirs(pickleDir)
 
@@ -1193,11 +1070,12 @@ if __name__=="__main__":
     print("Checking hit intersections...")
     hitStart1=datetime.datetime.now()
     print(hitStart1)
-    hitBins = {"nX": 100, "nY": 100, "nZ": 100}
+    hitBins = {"x": 100, "y": 100, "z": 100}
     # Check whether a set of points intersect ANUBIS
-    x = np.linspace(cav.CavernX[0] - 5, cav.CavernX[1] + 5, hitBins["nX"])
-    y = np.linspace(cav.CavernY[0] - 5, (cav.archRadius + cav.centreOfCurvature["y"]) + 5, hitBins["nY"])
-    z = np.linspace(cav.CavernZ[0] - 5, cav.CavernZ[1] + 5, hitBins["nZ"])
+    """
+    x = np.linspace(cav.CavernX[0] - 5, cav.CavernX[1] + 5, hitBins["x"])
+    y = np.linspace(cav.CavernY[0] - 5, (cav.archRadius + cav.centreOfCurvature["y"]) + 5, hitBins["y"])
+    z = np.linspace(cav.CavernZ[0] - 5, cav.CavernZ[1] + 5, hitBins["z"])
 
     hitBins["widthX"] = abs(x[1]-x[0])
     hitBins["widthY"] = abs(y[1]-y[0])
@@ -1205,12 +1083,13 @@ if __name__=="__main__":
     hitBins["rangeX"] = [x[0]-(hitBins["widthX"]/2), x[-1]+(hitBins["widthX"]/2)]
     hitBins["rangeY"] = [y[0]-(hitBins["widthY"]/2), y[-1]+(hitBins["widthY"]/2)]
     hitBins["rangeZ"] = [z[0]-(hitBins["widthZ"]/2), z[-1]+(hitBins["widthZ"]/2)]
-    
+    """
     ANUBISstations = RPC_Pos1
     ANUBISstations.extend(RPC_Pos2)
     ANUBISstations.extend(RPC_Pos3)
     ANUBISstations = cav.convertRPCList(ANUBISstations)
-
+    #hitbins are probably just setting up the bins and binwidths for the actual hits
+    #anubisstations then just makes a list of all the stations
     """
     nHits=0
     passedHits, failedHits = [], []
@@ -1236,16 +1115,18 @@ if __name__=="__main__":
     print(hitEnd1)
     #print(f"Took {hitEnd1 - hitStart1}")
 
-    ANUBISstations = cav.createSimpleRPCs([cav.archRadius-0.2, cav.archRadius-0.6, cav.archRadius-1.2], RPCthickness=0.06)
+    ANUBISstations = cav.createSimpleRPCs([cav.archRadius, cav.archRadius-0.4, cav.archRadius-1], RPCthickness=0.06)
+    print(ANUBISstations)
     minStationRadius = min(min(ANUBISstations["r"]))
+    #finding minimum point from probably ip as constraint for hit or not
 
     nHits=0
+    """
     passedHits, failedHits = [], []
-    #might need to change the coordiantes 
     for X in x:
         for Y in y:
             for Z in z:
-                print(f"{nHits}/{len(x)*len(y)*len(z)}", end="\r", flush=True)
+                print(f"{nHits}/{len(x)*len(y)*len(z)}", end="\r", flush=True) #progress bar?
                 inCavern = cav.inCavern(X, Y, Z, maxRadius=minStationRadius - 0.20)
                 inATLAS = cav.inATLAS(X, Y, Z, trackingOnly=True)
                 intANUBIS = cav.intersectANUBISstationsSimple(X, Y, Z, ANUBISstations)
@@ -1255,14 +1136,127 @@ if __name__=="__main__":
                 else:
                     failedHits.append((X,Y,Z))
                 nHits+=1
+    """
+    
+    import pandas as pd
+    hits_df = pd.read_csv(args.hitfile)
+    import ast
+
+    hits_df['decayVertexParsed'] = hits_df['decayVertex'].apply(ast.literal_eval)
+    passedHits, failedHits = [], []
+    passedevents, failedevents = [], []
+    eventeta = []
+    eventphi = []
+    allhits = []
+    for i, row in hits_df.iterrows():
+        X, Y, Z = row['decayVertexParsed'][0], row['decayVertexParsed'][1], row['decayVertexParsed'][2]
+        X = X-1.7 
+        Y = Y-cav.CavernYLength/2 + 11.37
+
+        """
+        print("this is x")
+        print(X)
+        print("this is row['decayVertexParsed']")
+        print(row['decayVertexParsed'])
+        print("this is row['decayVertexParsed'][2]")
+        print(row['decayVertexParsed'][2])
+        """
+        r, theta, phi = row['decayVertexDist'], h.to_theta(row['eta']),row['phi']
+
+
+        inCavern = cav.inCavern(X, Y, Z, maxRadius=minStationRadius - 0.20)
+        inATLAS = cav.inATLAS(X, Y, Z, trackingOnly=True)
+        intANUBIS = cav.intersectANUBISstationsSimple2(X, Y, Z,r, theta, phi, ANUBISstations)
+
+        
+        if ( inCavern and not inATLAS and (len(intANUBIS[1]) >= 2) ):
+            passedHits.append((X,Y,Z))
+            passedevents.append(row["eventNumber"])
+
+
+        else:
+            failedHits.append((X,Y,Z))
+            failedevents.append(row["eventNumber"])
+        allhits.append((X,Y,Z))
+
+        eventeta.append(row["eta"])
+        eventphi.append(row["phi"])
+
+        if i % 1000 == 0:
+            print(f"Checked {i}/{len(hits_df)} hits", end="\r", flush=True)
 
     hitEnd2=datetime.datetime.now()
     print(hitEnd2)
     print(f"Took {hitEnd2 - hitEnd1}")
-    print(f"Passed: {len(passedHits)} ({len(passedHits)/(len(passedHits)+len(failedHits))})  | Failed: {len(failedHits)} ({len(failedHits)/(len(passedHits)+len(failedHits))})")
+    print(f"Passed: {len(passedHits)} ({len(passedHits)/(len(passedHits)+len(failedHits))}%)  | Failed: {len(failedHits)} ({len(failedHits)/(len(passedHits)+len(failedHits))}%)")
+    
+    # Extract coordinates
+    x_vals = [pt[0] for pt in passedHits]
+    y_vals = [pt[1] for pt in passedHits]
+    z_vals = [pt[2] for pt in passedHits]
 
-    print("plotting...")
-    cav.plotFullCavern(anubisRPCs=[RPC_Pos1, RPC_Pos2, RPC_Pos3], plotATLAS=True, plotAcceptance=True, plotFailed=False, 
+    # Define bin counts
+    n_bins_x = 100
+    n_bins_y = 100
+    n_bins_z = 100
+
+    # Calculate min/max for each axis
+    #data
+    min_x, max_x = min(x_vals), max(x_vals)
+    min_y, max_y = min(y_vals), max(y_vals)
+    min_z, max_z = min(z_vals), max(z_vals)
+    #anubis
+    min_x, max_x = cav.CavernX[0] - 5, cav.CavernX[1] + 5
+    min_y, max_y = cav.CavernY[0] - 5, (cav.archRadius + cav.centreOfCurvature["y"]) + 5
+    min_z, max_z = cav.CavernZ[0] - 5, cav.CavernZ[1] + 5
+
+    # Calculate bin widths
+    width_x = (max_x - min_x) / n_bins_x
+    width_y = (max_y - min_y) / n_bins_y
+    width_z = (max_z - min_z) / n_bins_z
+
+    # Pad ranges by half a bin
+    range_x = [min_x - width_x / 2, max_x + width_x / 2]
+    range_y = [min_y - width_y / 2, max_y + width_y / 2]
+    range_z = [min_z - width_z / 2, max_z + width_z / 2]
+
+    # Update hitBins dictionary
+    hitBins = {
+        "x": n_bins_x,
+        "y": n_bins_y,
+        "z": n_bins_z,
+        "widthX": width_x,
+        "widthY": width_y,
+        "widthZ": width_z,
+        "rangeX": range_x,
+        "rangeY": range_y,
+        "rangeZ": range_z
+    }
+    cav.plotFullCavern(ANUBISrpcs=[RPC_Pos1, RPC_Pos2, RPC_Pos3], plotATLAS=True, plotFailed=False, 
+                        hits={"passed": allhits, "failed": failedHits, "bins": hitBins}, suffix=f"precut") #{args.suffix}
+
+
+    cav.plotFullCavern(ANUBISrpcs=[RPC_Pos1, RPC_Pos2, RPC_Pos3], plotATLAS=True, plotFailed=False, 
                                    hits={"passed": passedHits, "failed": failedHits, "bins": hitBins}, suffix=f"_WithHits{args.suffix}")
     print(datetime.datetime.now())
 
+    plt.figure(figsize=(10,6))
+    cuteventeta = [e for e in eventeta if -15 <= e <= 15]
+    plt.hist(cuteventeta, bins=100, color='purple', alpha=0.75)
+    plt.xlabel("η (pseudorapidity)")
+    plt.ylabel("Number of hits")
+    plt.title("Pseudorapidity Distribution")
+    plt.grid(True)
+    plt.tight_layout()
+    plt.savefig("pseudorapidity_distribution.pdf")
+    #plt.show()
+
+    plt.figure(figsize=(10,6))
+    plt.hist(eventphi, bins=90, color='orange', alpha=0.75)
+    plt.xlabel("ϕ (phi) [radians]")
+    plt.ylabel("Number of hits")
+    plt.title("Azimuthal Angle (ϕ) Distribution")
+    plt.grid(True)
+    plt.tight_layout()
+    plt.savefig("phi_distribution.pdf")
+    #plt.show()

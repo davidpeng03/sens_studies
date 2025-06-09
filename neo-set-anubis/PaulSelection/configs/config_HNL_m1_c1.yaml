@@ -3,13 +3,20 @@
 # LLP Info
 llp_id: 9900012
 llp_type: "hnl"
+seed: 9900012
+
 
 #
 # File Paths
 SimSwarmDir: "/usera/dp728/simulations"
-scanfile: "/usera/dp728/run_dir/samples_to_process.csv"
+scanFile: "/usera/dp728/run_dir/samples_to_process.csv" 
+lifetimeFile: "/usera/amullin/Documents/ANUBIS/acceptance_results/HNLCalc-main/HNLCalc_ctau_table_electrons.csv"
 outputDir: "/usera/dp728/run_dir/output/"
-#
+geometryPath: "/r04/atlas/pswallow/SensitivityStudies/Selection/geometry/"
+
+
+#geometryPath: "/r04/atlas/pswallow/SensitivityStudies/Selection/geometry/"
+
 
 # Selections
 selection: { 
@@ -23,3 +30,4 @@ selection: {
              #'minTheta': 0.828849
              #'maxTheta': 1.51461
            }
+
